@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lizeth Tsunami Pro</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- MENÚ PRINCIPAL -->
+    <div id="main-menu">
+        <h1 class="game-title">LIZETH TSUNAMI</h1>
+        
+        <p class="select-text">ELIGE TU LIZETH O AMIGA:</p>
+        <div class="skin-selector">
+            <!-- Lizeth 1 -->
+            <div class="skin-card active" onclick="selectSkin(1, this)">
+                <div class="img-container"><img src="assets/skin1/run1.png"></div>
+                <span>LIZETH 1</span>
+            </div>
+            <!-- Lizeth 2 -->
+            <div class="skin-card" onclick="selectSkin(2, this)">
+                <div class="img-container"><img src="assets/skin2/run1.png"></div>
+                <span>LIZETH 2</span>
+            </div>
+            <!-- Lizeth 3 -->
+            <div class="skin-card" onclick="selectSkin(3, this)">
+                <div class="img-container"><img src="assets/skin3/run1.png"></div>
+                <span>LIZETH 3</span>
+            </div>
+            <!-- Lizeth 4 -->
+            <div class="skin-card" onclick="selectSkin(4, this)">
+                <div class="img-container"><img src="assets/skin4/run1.png"></div>
+                <span>LIZETH 4</span>
+            </div>
+            <!-- Maira -->
+            <div class="skin-card" onclick="selectSkin(5, this)">
+                <div class="img-container"><img src="assets/skin5/run1.png"></div>
+                <span>MAIRA</span>
+            </div>
+            <!-- Come Ratas -->
+            <div class="skin-card" onclick="selectSkin(7, this)">
+                <div class="img-container"><img src="assets/skin7/run1.png"></div>
+                <span>COME RATAS</span>
+            </div>
+        </div>
+
+        <button id="start-btn">INICIAR AVENTURA</button>
+    </div>
+
+    <!-- UI DEL JUEGO -->
+    <div id="ui" style="display: none;">
+        <div id="gold-stat" class="stat-box">💰 Oro: <span id="gold-count">0</span></div>
+        <div id="lizeth-stat" class="stat-box">👯 Horda: <span id="lizeth-count">1</span></div>
+    </div>
+
+    <div id="game-over-screen" style="display: none;">
+        <h1>¡GAME OVER!</h1>
+        <button id="restart-btn">REINTENTAR</button>
+    </div>
+
+    <canvas id="game"></canvas>
+
+    <script src="js/player.js"></script>
+    <script src="js/item.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
