@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Lizeth Tsunami Pro</title>
     <style>
-        /* --- ESTILOS CSS --- */
+        /* --- ESTILOS CRÍTICOS CSS --- */
         * { 
             margin: 0; 
             padding: 0; 
@@ -19,91 +19,91 @@
             overflow: hidden; 
             background: #111; 
             touch-action: none; 
+            font-family: 'Arial Black', sans-serif;
         }
 
-        /* Canvas Nítido (Pixel Art) */
+        /* Canvas adaptativo con renderizado Pixel Art nativo */
         canvas { 
             display: block; 
             width: 100vw; 
             height: 100vh; 
             image-rendering: pixelated; 
+            image-rendering: crisp-edges;
         }
 
-        /* Bloqueo Horizontal Obligatorio mediante Media Queries */
+        /* Pantalla de bloqueo de orientación obligatoria */
         #turn-device-screen {
             display: none;
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: #111;
+            background: #151515;
             color: white;
             z-index: 9999;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-family: 'Arial Black', sans-serif;
             text-align: center;
-            padding: 30px;
+            padding: 20px;
         }
 
-        /* Si la pantalla está en vertical (Portrait), se muestra el aviso */
         @media screen and (orientation: portrait) {
-            #turn-device-screen {
-                display: flex;
-            }
+            #turn-device-screen { display: flex; }
         }
 
         .phone-icon {
-            font-size: 60px;
-            margin-bottom: 20px;
-            animation: rotatePhone 2s ease-in-out infinite;
+            font-size: 50px;
+            margin-bottom: 15px;
+            animation: rotatePhone 2.2s ease-in-out infinite;
         }
 
         @keyframes rotatePhone {
             0% { transform: rotate(0deg); }
-            50% { transform: rotate(-90deg); }
+            40% { transform: rotate(-90deg); }
             100% { transform: rotate(-90deg); }
         }
 
-        /* Pantallas de Menú */
+        /* Estructuras de Interfaces (Menús) */
         #main-menu, #game-over-screen {
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.55);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 100;
             color: white;
-            font-family: 'Arial Black', sans-serif;
-            text-align: center;
-            padding: 15px;
+            padding: 10px;
         }
 
         .game-title {
-            font-size: clamp(24px, 6vw, 55px);
+            font-size: clamp(24px, 5.5vw, 52px);
             color: #ffd700;
-            text-shadow: 3px 3px 0px #000;
+            text-shadow: 3px 3px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
             margin-bottom: 5px;
+            letter-spacing: 1px;
         }
 
         .select-text {
-            font-size: 11px;
-            color: #eee;
+            font-size: clamp(10px, 2vw, 13px);
+            color: #fff;
+            background: rgba(0,0,0,0.4);
+            padding: 3px 12px;
+            border-radius: 20px;
             letter-spacing: 1px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
-        /* Selector de Personajes adaptable a móviles */
+        /* Contenedor del Selector (Scroll Táctil Suave) */
         .skin-selector {
             display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding: 10px 20px;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 8px 15px;
             width: 100%;
-            max-width: 650px;
+            max-width: 680px;
             overflow-x: auto;
             scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
@@ -111,27 +111,27 @@
         .skin-selector::-webkit-scrollbar { display: none; }
 
         .skin-card {
-            min-width: 90px;
-            background: rgba(0, 0, 0, 0.6);
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            border-radius: 15px;
-            padding: 10px 5px;
+            min-width: 85px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 3px solid rgba(255, 255, 255, 0.25);
+            border-radius: 12px;
+            padding: 8px 4px;
             cursor: pointer;
-            transition: 0.2s ease-out;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.2);
             flex-shrink: 0;
         }
 
         .skin-card.active {
             border-color: #ffd700;
-            background: rgba(255, 215, 0, 0.3);
-            transform: scale(1.05);
-            box-shadow: 0 5px 12px rgba(0,0,0,0.5);
+            background: rgba(255, 215, 0, 0.25);
+            transform: scale(1.04);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
         }
 
         .skin-card .img-container {
-            width: 45px;
-            height: 45px;
-            margin: 0 auto 5px;
+            width: 42px;
+            height: 42px;
+            margin: 0 auto 4px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -146,54 +146,53 @@
 
         .skin-card span {
             display: block;
-            font-size: 9px;
+            font-size: 8.5px;
             font-weight: bold;
-            color: white;
+            color: #fff;
             text-transform: uppercase;
         }
 
-        /* UI del Juego (Burbujas flotantes) */
+        /* Marcadores del Juego (HUD de Burbujas) */
         #ui {
             position: absolute;
-            top: 15px; 
-            left: 15px;
+            top: 12px; left: 12px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             z-index: 10;
             pointer-events: none;
         }
 
         .stat-box {
-            background: rgba(0, 0, 0, 0.75);
-            padding: 6px 14px;
-            border-radius: 50px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 5px 12px;
+            border-radius: 30px;
             border: 2px solid #ffd700;
             color: white;
-            font-family: 'Arial Black', sans-serif;
-            font-size: 14px;
+            font-size: 13px;
             width: fit-content;
-            box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.4);
             display: flex;
             align-items: center;
         }
 
-        /* Botones adaptados para dedos grandes */
+        /* Botones de Acción Táctiles Modernos */
         #start-btn, #restart-btn {
-            padding: 12px 45px;
-            font-size: 18px;
+            padding: 10px 40px;
+            font-size: 16px;
             font-family: 'Arial Black', sans-serif;
             background: #ffd700;
+            color: #000;
             border: none;
-            border-radius: 50px;
+            border-radius: 40px;
             cursor: pointer;
-            box-shadow: 0 5px 0 #b8860b;
-            transition: 0.1s;
+            box-shadow: 0 4px 0 #b8860b;
+            transition: background 0.1s, transform 0.1s;
             -webkit-tap-highlight-color: transparent;
         }
 
         #start-btn:active, #restart-btn:active { 
-            transform: translateY(3px); 
+            transform: translateY(2px); 
             box-shadow: 0 2px 0 #b8860b; 
         }
     </style>
@@ -202,8 +201,8 @@
 
     <div id="turn-device-screen">
         <div class="phone-icon">🔄📱</div>
-        <h2>POR FAVOR GIRA TU TELÉFONO</h2>
-        <p style="font-size: 12px; margin-top: 10px; color: #ccc;">El juego requiere pantalla horizontal para poder jugarse correctamente.</p>
+        <h2 style="font-size: 18px;">POR FAVOR GIRA TU PANTALLA</h2>
+        <p style="font-size: 11px; margin-top: 6px; color: #bbb;">Para una experiencia perfecta, activa la rotación y pon el móvil en horizontal.</p>
     </div>
 
     <div id="main-menu">
@@ -235,76 +234,158 @@
                 <span>COME RATAS</span>
             </div>
         </div>
-
         <button id="start-btn">INICIAR AVENTURA</button>
     </div>
 
     <div id="ui" style="display: none;">
-        <div id="gold-stat" class="stat-box">💰 Oro: <span id="gold-count">0</span></div>
-        <div id="lizeth-stat" class="stat-box">👯 Horda: <span id="lizeth-count">1</span></div>
+        <div class="stat-box">💰 Oro: &nbsp;<span id="gold-count">0</span></div>
+        <div class="stat-box">👯 Horda: &nbsp;<span id="lizeth-count">1</span></div>
     </div>
 
     <div id="game-over-screen" style="display: none;">
-        <h1>¡GAME OVER!</h1>
-        <button id="restart-btn" style="margin-top: 20px;">REINTENTAR</button>
+        <h1 style="color: #ff3333; font-size: 40px; text-shadow: 3px 3px 0 #000;">¡GAME OVER!</h1>
+        <button id="restart-btn" style="margin-top: 15px;">REINTENTAR</button>
     </div>
 
     <canvas id="game"></canvas>
 
     <script>
-        // --- VARIABLES DE CLASES ---
+        // --- CONTROL INTELIGENTE DE AUDIO (Evita Crashing en Móviles) ---
+        class AudioPool {
+            constructor(src, size = 4) {
+                this.pool = [];
+                for(let i=0; i<size; i++) {
+                    let audio = new Audio(src);
+                    audio.load();
+                    this.pool.push(audio);
+                }
+                this.index = 0;
+            }
+            play(volume = 1.0) {
+                try {
+                    let sound = this.pool[this.index];
+                    sound.volume = volume;
+                    sound.currentTime = 0;
+                    sound.play().catch(()=>{});
+                    this.index = (this.index + 1) % this.pool.length;
+                } catch(e) {}
+            }
+        }
+
+        // Instancias seguras de Audio FX
+        const coinSound = new AudioPool("assets/moneda.mp3", 6);
+        const breadSound = new AudioPool("assets/pan.mp3", 4);
+        const explSound = new AudioPool("assets/explosion.mp3", 3);
+
+        // --- ENTIDADES Y LÓGICA DE JUEGO ---
         class Player {
             constructor(skinID, isLeader = false, startJumping = false) {
                 this.skinID = skinID;
                 this.isLeader = isLeader;
-                this.width = 96; this.height = 96; this.baseHeight = 96;
+                this.width = 96; this.height = 96;
                 this.x = isLeader ? 150 : 0;
-                this.y = 0; this.velocityY = startJumping ? -14 : 0;
-                this.gravity = 0.91; this.jumpForce = -22;
+                this.y = 0; 
+                this.velocityY = startJumping ? -14 : 0;
+                this.gravity = 0.91; 
+                this.jumpForce = -21;
                 this.state = "run";
-                this.isJumpHeld = false; this.isDying = false; this.deathTimer = 0;
-                this.personalDistance = isLeader ? 0 : (12 + Math.random() * 25);
-                this.reactionSpeed = 0.15;
+                this.isJumpHeld = false; 
+                this.isDying = false; 
+                this.deathTimer = 0;
+                this.personalDistance = isLeader ? 0 : (14 + Math.random() * 22);
+                this.reactionSpeed = 0.16;
                 this.driftOffset = Math.random() * 1000;
                 this.groupOffsetX = isLeader ? 0 : (Math.random() * 60 - 30);
                 this.groupOffsetY = isLeader ? 0 : (Math.random() * 14 - 7);
-                this.frame = 0; this.frameCounter = 0;
+                this.frame = 0; 
+                this.frameCounter = 0;
                 this.sprites = { run: [], jump: [] };
                 this.loadAssets();
             }
             loadAssets() {
-                const f = `assets/skin${this.skinID}`;
-                for (let i = 1; i <= 4; i++) { let img = new Image(); img.src = `${f}/run${i}.png`; this.sprites.run.push(img); }
-                for (let i = 1; i <= 2; i++) { let img = new Image(); img.src = `${f}/jump${i}.png`; this.sprites.jump.push(img); }
+                const basePath = `assets/skin${this.skinID}`;
+                for (let i = 1; i <= 4; i++) { 
+                    let img = new Image(); img.src = `${basePath}/run${i}.png`; 
+                    this.sprites.run.push(img); 
+                }
+                for (let i = 1; i <= 2; i++) { 
+                    let img = new Image(); img.src = `${basePath}/jump${i}.png`; 
+                    this.sprites.jump.push(img); 
+                }
             }
-            triggerDeath() { if (this.isDying) return; this.isDying = true; this.velocityY = -10; this.isLeader = false; }
-            jump() { if (!this.isDying && (this.state === "run" || this.state === "onBox")) { this.velocityY = this.jumpForce; this.state = "jump"; } }
+            triggerDeath() { 
+                if (this.isDying) return; 
+                this.isDying = true; 
+                this.velocityY = -11; 
+                this.isLeader = false; 
+            }
+            jump() { 
+                if (!this.isDying && (this.state === "run" || this.state === "onBox")) { 
+                    this.velocityY = this.jumpForce; 
+                    this.state = "jump"; 
+                } 
+            }
             updateLeader(groundY) {
-                if (this.isDying) { this.x -= 8; this.velocityY += this.gravity; this.y += this.velocityY; this.deathTimer++; return; }
+                if (this.isDying) { 
+                    this.x -= 7; 
+                    this.velocityY += this.gravity; 
+                    this.y += this.velocityY; 
+                    this.deathTimer++; 
+                    return; 
+                }
                 if (this.x < 150) this.x += 2.5;
+
                 if (this.state === "jump") {
-                    if (this.isJumpHeld && this.velocityY > -5) this.velocityY = 2.7;
-                    else { this.velocityY += this.gravity * (!this.isJumpHeld ? 2.5 : 1.0); }
-                } else this.velocityY += this.gravity;
+                    if (this.isJumpHeld && this.velocityY > -5) this.velocityY += this.gravity * 0.9;
+                    else this.velocityY += this.gravity * 2.3;
+                } else {
+                    this.velocityY += this.gravity;
+                }
+                
                 this.y += this.velocityY;
-                if (this.y >= groundY) { this.y = groundY; this.velocityY = 0; this.state = "run"; }
-                this.frameCounter++; if (this.frameCounter > 6) { this.frame = (this.frame + 1) % 4; this.frameCounter = 0; }
+                if (this.y >= groundY) { 
+                    this.y = groundY; 
+                    this.velocityY = 0; 
+                    this.state = "run"; 
+                }
+                
+                this.frameCounter++; 
+                if (this.frameCounter > 6) { 
+                    this.frame = (this.frame + 1) % 4; 
+                    this.frameCounter = 0; 
+                }
             }
             updateFollower(data, index) {
-                if (this.isDying) { this.x -= 8; this.velocityY += this.gravity; this.y += this.velocityY; this.deathTimer++; return; }
+                if (this.isDying) { 
+                    this.x -= 7; 
+                    this.velocityY += this.gravity; 
+                    this.y += this.velocityY; 
+                    this.deathTimer++; 
+                    return; 
+                }
                 if (!data) return;
                 this.y = data.y + this.groupOffsetY;
                 let targetX = data.x - (index * this.personalDistance) + this.groupOffsetX + Math.sin((Date.now() + this.driftOffset) * 0.003) * 12;
                 this.x += (targetX - this.x) * this.reactionSpeed;
-                this.state = data.state; this.frame = data.frame; this.velocityY = data.velocityY;
+                this.state = data.state; 
+                this.frame = data.frame; 
+                this.velocityY = data.velocityY;
             }
-            draw(ctx, inv) {
-                let img = (this.state === "jump") ? this.sprites.jump[this.velocityY < 0 ? 0 : 1] : this.sprites.run[this.frame % 4];
-                if (!img || !img.complete) img = this.sprites.run[0];
+            draw(ctx, isInvincible) {
+                let imgArr = (this.state === "jump") ? this.sprites.jump : this.sprites.run;
+                let frameIdx = (this.state === "jump") ? (this.velocityY < 0 ? 0 : 1) : (this.frame % 4);
+                let img = imgArr[frameIdx];
+                
+                if (!img || !img.complete) img = this.sprites.run[0]; // Respaldo seguro de renderizado
+
                 if (img && img.complete) {
                     ctx.save();
-                    if (this.isDying) { ctx.globalAlpha = 0.5; ctx.filter = "grayscale(1) brightness(2) sepia(1) saturate(5)"; }
-                    else if (inv) ctx.filter = "drop-shadow(0 0 8px gold) brightness(1.2)";
+                    if (this.isDying) { 
+                        ctx.globalAlpha = 0.5; 
+                        ctx.filter = "grayscale(1) brightness(1.8) sepia(0.5)"; 
+                    } else if (isInvincible) {
+                        ctx.filter = "drop-shadow(0 0 6px gold) brightness(1.2)";
+                    }
                     ctx.drawImage(img, this.x, this.y, this.width, this.height);
                     ctx.restore();
                 }
@@ -314,8 +395,8 @@
         class Item {
             constructor(type, x, y, img) {
                 this.type = type; this.x = x; this.y = y;
-                this.width = (type === 'salchipapa') ? 100 : 45;
-                this.height = (type === 'salchipapa') ? 100 : 45;
+                this.width = (type === 'salchipapa') ? 95 : 45;
+                this.height = (type === 'salchipapa') ? 95 : 45;
                 this.img = img;
             }
             update(speed) { this.x -= speed; }
@@ -336,15 +417,34 @@
         }
 
         class Paloma {
-            constructor(x, y, frames) { this.x = x; this.y = y; this.width = 80; this.height = 70; this.frames = frames; this.currentFrame = 0; this.counter = 0; }
-            update(speed) { this.x -= speed + 2; this.counter++; if (this.counter > 6) { this.currentFrame = (this.currentFrame + 1) % 5; this.counter = 0; } }
+            constructor(x, y, frames) { 
+                this.x = x; this.y = y; this.width = 80; this.height = 70; 
+                this.frames = frames; this.currentFrame = 0; this.counter = 0; 
+            }
+            update(speed) { 
+                this.x -= (speed + 2.2); 
+                this.counter++; 
+                if (this.counter > 5) { this.currentFrame = (this.currentFrame + 1) % 5; this.counter = 0; } 
+            }
             draw(ctx) { let img = this.frames[this.currentFrame]; if (img && img.complete) ctx.drawImage(img, this.x, this.y, this.width, this.height); }
         }
 
         class Box {
-            constructor(x, y, img) { this.x = x; this.y = y; this.width = 100; this.height = 100; this.img = img; this.health = 45; this.isBeingPushed = false; this.shakeX = 0; }
-            update(speed) { if (this.isBeingPushed) { this.x -= speed * 0.3; this.shakeX = (Math.random()-0.5)*6; } else { this.x -= speed; this.shakeX = 0; } }\
-            draw(ctx) { if (this.img.complete) { ctx.drawImage(this.img, this.x + this.shakeX, this.y, this.width, this.height); ctx.fillStyle = "white"; ctx.font = "bold 24px Arial"; ctx.textAlign = "center"; ctx.fillText("3", this.x + this.width/2 + this.shakeX, this.y + 40); } }
+            constructor(x, y, img) { 
+                this.x = x; this.y = y; this.width = 100; this.height = 100; 
+                this.img = img; this.health = 45; this.isBeingPushed = false; this.shakeX = 0; 
+            }
+            update(speed) { 
+                if (this.isBeingPushed) { this.x -= speed * 0.3; this.shakeX = (Math.random() - 0.5) * 6; } 
+                else { this.x -= speed; this.shakeX = 0; } 
+            }
+            draw(ctx) { 
+                if (this.img.complete) { 
+                    ctx.drawImage(this.img, this.x + this.shakeX, this.y, this.width, this.height); 
+                    ctx.fillStyle = "white"; ctx.font = "bold 22px Arial"; ctx.textAlign = "center"; 
+                    ctx.fillText("3", this.x + this.width / 2 + this.shakeX, this.y + 38); 
+                } 
+            }
         }
 
         class Explosion {
@@ -356,7 +456,7 @@
             draw(ctx) { let img = this.sprites[this.frame]; if (img && img.complete) ctx.drawImage(img, this.x - 20, this.y - 20, this.width, this.height); }
         }
 
-        // --- SISTEMA DE JUEGO PRINCIPAL ---
+        // --- NÚCLEO CORE DEL MOTOR ---
         const canvas = document.getElementById("game");
         const ctx = canvas.getContext("2d");
 
@@ -368,7 +468,7 @@
             selectedLeaderSkin = skinId;
             document.querySelectorAll('.skin-card').forEach(card => card.classList.remove('active'));
             element.classList.add('active');
-            if (breadSound) breadSound.cloneNode().play().catch(()=>{});
+            breadSound.play(0.4);
         };
 
         function resize() {
@@ -377,7 +477,7 @@
             ctx.imageSmoothingEnabled = false; 
         }
         window.addEventListener("resize", resize);
-        window.addEventListener("orientationchange", () => { setTimeout(resize, 200); });
+        window.addEventListener("orientationchange", () => { setTimeout(resize, 250); });
         resize();
 
         function drawInfiniteBackground(offsetX) {
@@ -396,6 +496,7 @@
             }
         }
 
+        // --- DECLARACIÓN SEGURA DE RECURSOS ---
         const LETRAS_COIN = {
             'T': [[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
             'E': [[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,0],[1,1,1,1,1]],
@@ -418,11 +519,9 @@
         };
         const FRASES = ["TE EXTRAÑO", "TE AMO", "MI CIEGA", "MI CHIQUITA", "MI ENOJONA", "11:11"];
         const playlist = ["assets/musica2.mp3", "assets/musica1.mp3", "assets/musica3.mp3", "assets/musica4.mp3"];
+        
         let musicIndex = 0, currentBgMusic = null, musicStarted = false;
 
-        const coinSound = new Audio("assets/moneda.mp3");
-        const breadSound = new Audio("assets/pan.mp3");
-        const explSound = new Audio("assets/explosion.mp3");
         const bg1 = new Image(); bg1.src = "assets/background.png";
         const bg2 = new Image(); bg2.src = "assets/background2.png";
         const coinImg = new Image(); coinImg.src = "assets/monedas.png";
@@ -439,33 +538,25 @@
 
         let actionBuffer, explosions, items, obstacles, boxes;
         let goldScore, nextSkinId, bgX, bgSpeed, spawnTimer, startTime, introActive, gameActive, tsunamiTimer, lastSpawnX;
-        const GROUND_PERCENT = 0.92, BASE_SPEED = 5.5, DELAY_FRAMES = 8;
+        const GROUND_PERCENT = 0.92, BASE_SPEED = 5.6, DELAY_FRAMES = 8;
         let animationId = null;
 
-        // --- FUNCIÓN PARA SOLICITAR GIRO Y PANTALLA COMPLETA ---
         function requestFullscreenAndLandscape() {
-            // Pedir pantalla completa en el documento html
             const docEl = document.documentElement;
-            if (docEl.requestFullscreen) { docEl.requestFullscreen().catch(()=>{}); }
-            else if (docEl.webkitRequestFullscreen) { docEl.webkitRequestFullscreen().catch(()=>{}); }
-            else if (docEl.msRequestFullscreen) { docEl.msRequestFullscreen().catch(()=>{}); }
+            if (docEl.requestFullscreen) docEl.requestFullscreen().catch(()=>{});
+            else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen().catch(()=>{});
 
-            // Intentar forzar orientación horizontal mediante JS
             if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock("landscape").catch((err) => {
-                    console.log("El bloqueo nativo falló, dependerá del giro físico:", err);
-                });
+                screen.orientation.lock("landscape").catch(()=>{});
             }
         }
 
         function initGame() {
-            // Solicitar configuraciones de pantalla móvil horizontal de inmediato
             requestFullscreenAndLandscape();
 
             if (animationId) cancelAnimationFrame(animationId);
             window.horde = [new Player(selectedLeaderSkin, true)];
-            if (selectedLeaderSkin <= 4) nextSkinId = (selectedLeaderSkin % 4) + 1;
-            else nextSkinId = 1;
+            nextSkinId = (selectedLeaderSkin <= 4) ? (selectedLeaderSkin % 4) + 1 : 1;
 
             actionBuffer = []; explosions = []; items = []; obstacles = []; boxes = [];
             goldScore = 0; bgX = 0; bgSpeed = BASE_SPEED;
@@ -475,20 +566,22 @@
             document.getElementById("main-menu").style.display = "none";
             document.getElementById("game-over-screen").style.display = "none";
             document.getElementById("ui").style.display = "flex";
-            document.getElementById("gold-count").innerText = "0";
             
             updateUI();
             if (!musicStarted) setupMusic();
-            setTimeout(() => { if(gameActive) spawnWord(FRASES[Math.floor(Math.random()*FRASES.length)], canvas.width + 100, (canvas.height * GROUND_PERCENT) - 96); }, 800);
             
-            setTimeout(resize, 150); // Forzar recalculo tras cambio de orientación
+            setTimeout(() => { 
+                if(gameActive) spawnWord(FRASES[Math.floor(Math.random()*FRASES.length)], canvas.width + 100, (canvas.height * GROUND_PERCENT) - 96); 
+            }, 700);
+            
+            setTimeout(resize, 120);
             gameLoop();
         }
 
         function setupMusic() {
             if (currentBgMusic) { currentBgMusic.pause(); currentBgMusic.remove(); }
             currentBgMusic = new Audio(playlist[musicIndex]);
-            currentBgMusic.volume = 0.7;
+            currentBgMusic.volume = 0.65;
             currentBgMusic.onended = () => { musicIndex = (musicIndex + 1) % playlist.length; setupMusic(); currentBgMusic.play(); };
         }
 
@@ -497,18 +590,20 @@
             let alive = window.horde.filter(p => !p.isDying);
             if (alive.length > 0) {
                 alive[0].jump();
-                if (!musicStarted && currentBgMusic) { currentBgMusic.play().then(() => musicStarted = true).catch(() => {}); }
+                if (!musicStarted && currentBgMusic) { 
+                    currentBgMusic.play().then(() => musicStarted = true).catch(() => {}); 
+                }
             }
         };
 
         function spawnWord(frase, startX, groundY) {
-            const coinSp = 25, letSp = 45;
+            const coinSp = 24, letSp = 42;
             let curX = startX;
             for (let char of frase.toUpperCase()) {
                 const matrix = LETRAS_COIN[char] || LETRAS_COIN[' '];
                 for (let r = 0; r < matrix.length; r++) {
                     for (let c = 0; c < matrix[r].length; c++) {
-                        if (matrix[r][c] === 1) items.push(new Item('gold', curX + (c * coinSp), (groundY - 250) + (r * coinSp), coinImg));
+                        if (matrix[r][c] === 1) items.push(new Item('gold', curX + (c * coinSp), (groundY - 240) + (r * coinSp), coinImg));
                     }
                 }
                 curX += (5 * coinSp) + letSp;
@@ -520,33 +615,45 @@
             const finalSkin = skinId || nextSkinId;
             window.horde.push(new Player(finalSkin, false, jump));
             if (skinId === null && nextSkinId <= 4) nextSkinId = (nextSkinId % 4) + 1;
-            breadSound.cloneNode().play().catch(()=>{});
+            breadSound.play(0.45);
             updateUI();
         }
 
         function updateUI() {
             const count = window.horde.filter(p => !p.isDying).length;
             document.getElementById("lizeth-count").innerText = count;
+            document.getElementById("gold-count").innerText = goldScore;
         }
 
         function spawnPattern(groundY, gameTime) {
             if (introActive || !gameActive) return;
-            if (canvas.width - lastSpawnX < 450) return;
+            if (canvas.width - lastSpawnX < 420) return;
+            
             const chance = Math.random();
-            if (chance < 0.015) { items.push(new Item('salchipapa', canvas.width + 100, groundY - 160, salchipapaImg)); lastSpawnX = canvas.width + 100; }
-            else if (chance < 0.065) { boxes.push(new Box(canvas.width + 100, groundY - 4, boxImg)); lastSpawnX = canvas.width + 100; }
-            else if (chance < 0.515) {
-                const obsChance = Math.random(); let xPos = canvas.width + 100;
-                if (obsChance < 0.25) obstacles.push(new Paloma(xPos, groundY - 130, palomaFrames));
+            if (chance < 0.016) { 
+                items.push(new Item('salchipapa', canvas.width + 100, groundY - 150, salchipapaImg)); 
+                lastSpawnX = canvas.width + 100; 
+            } else if (chance < 0.07) { 
+                boxes.push(new Box(canvas.width + 100, groundY - 4, boxImg)); 
+                lastSpawnX = canvas.width + 100; 
+            } else if (chance < 0.52) {
+                const obsChance = Math.random(); 
+                let xPos = canvas.width + 100;
+                if (obsChance < 0.25) obstacles.push(new Paloma(xPos, groundY - 135, palomaFrames));
                 else if (obsChance < 0.45) obstacles.push(new Obstacle(xPos, groundY - 4, ballaImg, 'balla'));
                 else if (obsChance < 0.65) obstacles.push(new Obstacle(xPos, groundY - 35, barrera2Img, 'barrera2'));
                 else if (obsChance < 0.85) obstacles.push(new Obstacle(xPos, groundY - 24, barrelImg, 'barril'));
                 else obstacles.push(new Obstacle(xPos, groundY - 4, autoImg, 'auto'));
                 lastSpawnX = xPos;
             } else {
-                const itemChance = Math.random(); let xPos = canvas.width + 100;
-                if (itemChance < 0.50) { items.push(new Item('bread', xPos, groundY - 140, breadImg)); lastSpawnX = xPos; }
-                else { for (let i = 0; i < 6; i++) items.push(new Item('gold', xPos + (i * 75), (groundY + 20) - Math.sin((i / 5) * Math.PI) * 180, coinImg)); lastSpawnX = xPos + 450; }
+                const itemChance = Math.random(); 
+                let xPos = canvas.width + 100;
+                if (itemChance < 0.48) { 
+                    items.push(new Item('bread', xPos, groundY - 135, breadImg)); lastSpawnX = xPos; 
+                } else { 
+                    for (let i = 0; i < 6; i++) items.push(new Item('gold', xPos + (i * 70), (groundY + 20) - Math.sin((i / 5) * Math.PI) * 170, coinImg)); 
+                    lastSpawnX = xPos + 420; 
+                }
             }
         }
 
@@ -555,8 +662,8 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             const gameTime = (Date.now() - startTime) / 1000;
-            bgSpeed = (gameTime < 15) ? BASE_SPEED : (gameTime < 45) ? BASE_SPEED + 1.5 : (BASE_SPEED + 3.5) + Math.sin(gameTime * 0.3) * 2;
-            if (gameTime >= 15) introActive = false;
+            bgSpeed = (gameTime < 14) ? BASE_SPEED : (gameTime < 42) ? BASE_SPEED + 1.6 : (BASE_SPEED + 3.4) + Math.sin(gameTime * 0.35) * 2;
+            if (gameTime >= 14) introActive = false;
 
             bgX -= bgSpeed;
             drawInfiniteBackground(bgX);
@@ -568,41 +675,104 @@
             if (tsunamiTimer > 0) tsunamiTimer--;
             
             if (aliveHorde.length === 0 && window.horde.length === 0) {
-                gameActive = false; document.getElementById("game-over-screen").style.display = "flex"; return;
+                gameActive = false; 
+                document.getElementById("game-over-screen").style.display = "flex"; 
+                return;
             }
 
             if (aliveHorde.length > 0) {
-                const leader = aliveHorde[0]; leader.isLeader = true; let currentFloor = groundY;
-                for(let b of boxes) { if (leader.x + leader.width > b.x + 20 && leader.x < b.x + b.width - 20) { if (leader.y + leader.height <= b.y + 35 && leader.velocityY >= 0) { currentFloor = b.y - leader.height; leader.state = "onBox"; } } }
+                const leader = aliveHorde[0]; 
+                leader.isLeader = true; 
+                let currentFloor = groundY;
+                
+                for(let b of boxes) { 
+                    if (leader.x + leader.width > b.x + 22 && leader.x < b.x + b.width - 22) { 
+                        if (leader.y + leader.height <= b.y + 35 && leader.velocityY >= 0) { 
+                            currentFloor = b.y - leader.height; 
+                            leader.state = "onBox"; 
+                        } 
+                    } 
+                }
+                
                 leader.updateLeader(currentFloor);
                 actionBuffer.push({x: leader.x, y: leader.y, state: leader.state, frame: leader.frame, velocityY: leader.velocityY});
-                if (actionBuffer.length > 500) actionBuffer.shift();
-                for (let i = 1; i < aliveHorde.length; i++) { const data = actionBuffer[actionBuffer.length - 1 - (i * DELAY_FRAMES)] || actionBuffer[0]; aliveHorde[i].isLeader = false; aliveHorde[i].updateFollower(data, i); }
+                if (actionBuffer.length > 600) actionBuffer.shift();
+                
+                for (let i = 1; i < aliveHorde.length; i++) { 
+                    const data = actionBuffer[actionBuffer.length - 1 - (i * DELAY_FRAMES)] || actionBuffer[0]; 
+                    aliveHorde[i].isLeader = false; 
+                    aliveHorde[i].updateFollower(data, i); 
+                }
             }
 
-            for (let i = window.horde.length - 1; i >= 0; i--) { let p = window.horde[i]; if (p.isDying) { p.updateLeader(groundY); if (p.deathTimer > 100 || p.x + p.width < -100) window.horde.splice(i, 1); } else if (p.x < -80) p.triggerDeath(); }
+            for (let i = window.horde.length - 1; i >= 0; i--) { 
+                let p = window.horde[i]; 
+                if (p.isDying) { 
+                    p.updateLeader(groundY); 
+                    if (p.deathTimer > 90 || p.x + p.width < -90) window.horde.splice(i, 1); 
+                } else if (p.x < -80) {
+                    p.triggerDeath();
+                }
+            }
             
-            spawnTimer++; if (spawnTimer > 35) { spawnPattern(groundY, gameTime); spawnTimer = 0; }
+            spawnTimer++; 
+            if (spawnTimer > 35) { spawnPattern(groundY, gameTime); spawnTimer = 0; }
             lastSpawnX -= bgSpeed;
 
+            // Procesado de Cajas
             for (let i = boxes.length - 1; i >= 0; i--) {
                 let b = boxes[i]; b.update(bgSpeed); b.draw(ctx); let hEmp = false;
-                for (let p of aliveHorde) { if (p.y + p.height > b.y + 10 && p.x + p.width > b.x + 5 && p.x < b.x + b.width - 15) { hEmp = true; p.x = b.x - p.width + 5; if (aliveHorde.length >= 3) b.isBeingPushed = true; } }
-                if (hEmp && aliveHorde.length >= 3) { b.health -= 3.5; if (b.health <= 0) { explosions.push(new Explosion(b.x, b.y)); explSound.cloneNode().play().catch(()=>{}); boxes.splice(i, 1); addToHorde(5, true); } } else b.isBeingPushed = false;
+                for (let p of aliveHorde) { 
+                    if (p.y + p.height > b.y + 12 && p.x + p.width > b.x + 4 && p.x < b.x + b.width - 14) { 
+                        hEmp = true; p.x = b.x - p.width + 4; 
+                        if (aliveHorde.length >= 3) b.isBeingPushed = true; 
+                    } 
+                }
+                if (hEmp && aliveHorde.length >= 3) { 
+                    b.health -= 3.8; 
+                    if (b.health <= 0) { 
+                        explosions.push(new Explosion(b.x, b.y)); 
+                        explSound.play(0.5); 
+                        boxes.splice(i, 1); 
+                        addToHorde(5, true); 
+                    } 
+                } else b.isBeingPushed = false;
                 if (b.x < -400) boxes.splice(i, 1);
             }
             
+            // Procesado de Obstáculos
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 obstacles[i].update(bgSpeed); obstacles[i].draw(ctx);
-                for (let p of aliveHorde) { if (checkCollision(p, obstacles[i], (obstacles[i] instanceof Paloma ? 15 : 35))) { explosions.push(new Explosion(obstacles[i].x, obstacles[i].y)); explSound.cloneNode().play().catch(()=>{}); obstacles.splice(i, 1); if (tsunamiTimer <= 0) { p.triggerDeath(); updateUI(); } break; } }
+                for (let p of aliveHorde) { 
+                    if (checkCollision(p, obstacles[i], (obstacles[i] instanceof Paloma ? 14 : 34))) { 
+                        explosions.push(new Explosion(obstacles[i].x, obstacles[i].y)); 
+                        explSound.play(0.5); 
+                        obstacles.splice(i, 1); 
+                        if (tsunamiTimer <= 0) { p.triggerDeath(); updateUI(); } 
+                        break; 
+                    } 
+                }
                 if (obstacles[i] && obstacles[i].x < -400) obstacles.splice(i, 1);
             }
 
+            // Explosiones y Coleccionables
             for (let i = explosions.length - 1; i >= 0; i--) { explosions[i].update(bgSpeed); explosions[i].draw(ctx); if (explosions[i].isFinished) explosions.splice(i, 1); }
             for (let i = items.length - 1; i >= 0; i--) {
                 items[i].update(bgSpeed); items[i].draw(ctx); let hit = false;
-                for (let m of aliveHorde) { if (checkCollision(m, items[i], -15)) { hit = true; if (items[i].type === 'gold') { goldScore++; document.getElementById("gold-count").innerText = goldScore; let s = coinSound.cloneNode(); s.volume = 0.05; s.play().catch(()=>{}); } else if (items[i].type === 'bread') addToHorde(null, true); else if (items[i].type === 'salchipapa') { addToHorde(5, true); addToHorde(7, true); } break; } }
-                if (hit || items[i].x < -1200) items.splice(i, 1);
+                for (let m of aliveHorde) { 
+                    if (checkCollision(m, items[i], -12)) { 
+                        hit = true; 
+                        if (items[i].type === 'gold') { 
+                            goldScore++; updateUI(); coinSound.play(0.18); 
+                        } else if (items[i].type === 'bread') {
+                            addToHorde(null, true); 
+                        } else if (items[i].type === 'salchipapa') { 
+                            addToHorde(5, true); addToHorde(7, true); 
+                        } 
+                        break; 
+                    } 
+                }
+                if (hit || items[i].x < -1100) items.splice(i, 1);
             }
 
             let sorted = [...window.horde].sort((a,b) => (a.y + a.groupOffsetY) - (b.y + b.groupOffsetY));
@@ -611,25 +781,27 @@
             animationId = requestAnimationFrame(gameLoop);
         }
 
-        function checkCollision(p, obj, margin) { return (p.x + margin < obj.x + obj.width && p.x + p.width - margin > obj.x && p.y + margin < obj.y + obj.height && p.y + p.height - margin > obj.y); }
+        function checkCollision(p, obj, margin) { 
+            return (p.x + margin < obj.x + obj.width && p.x + p.width - margin > obj.x && p.y + margin < obj.y + obj.height && p.y + p.height - margin > obj.y); 
+        }
 
         function drawMenu() {
             if (gameActive) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            menuBgX -= 2.5; 
+            menuBgX -= 2.2; 
             drawInfiniteBackground(menuBgX);
 
             const groundY = (canvas.height * GROUND_PERCENT) - 96;
             let p = new Player(selectedLeaderSkin, true);
             p.x = canvas.width / 2 - 48;
             p.y = groundY;
-            p.frame = Math.floor(Date.now() / 100) % 4; 
+            p.frame = Math.floor(Date.now() / 110) % 4; 
             p.draw(ctx, false);
 
             requestAnimationFrame(drawMenu);
         }
 
-        // --- ENTRADA DE USUARIO ADAPTADA A TOUCH / MOBILE ---
+        // --- SISTEMA INPUT ULTRA RESPONSIVO MULTITOUCH ---
         window.addEventListener("keydown", (e) => {
             if (["ArrowUp", "w", " ", "ArrowDown", "s"].includes(e.key)) {
                 if (window.horde && window.horde.length > 0) window.leaderJump();
@@ -643,7 +815,6 @@
             }
         });
 
-        // Soporte de toque móvil completo en el canvas
         canvas.addEventListener("pointerdown", (e) => {
             e.preventDefault();
             if (window.horde && window.horde.length > 0) {
