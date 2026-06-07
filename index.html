@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Lizeth Tsunami Pro</title>
     <style>
         /* --- ESTILOS CSS --- */
@@ -29,12 +29,48 @@
             image-rendering: pixelated; 
         }
 
+        /* Bloqueo Horizontal Obligatorio mediante Media Queries */
+        #turn-device-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #111;
+            color: white;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Arial Black', sans-serif;
+            text-align: center;
+            padding: 30px;
+        }
+
+        /* Si la pantalla está en vertical (Portrait), se muestra el aviso */
+        @media screen and (orientation: portrait) {
+            #turn-device-screen {
+                display: flex;
+            }
+        }
+
+        .phone-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: rotatePhone 2s ease-in-out infinite;
+        }
+
+        @keyframes rotatePhone {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-90deg); }
+            100% { transform: rotate(-90deg); }
+        }
+
         /* Pantallas de Menú */
         #main-menu, #game-over-screen {
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5); /* Sombra suave para resaltar el menú */
+            background: rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -43,59 +79,59 @@
             color: white;
             font-family: 'Arial Black', sans-serif;
             text-align: center;
-            padding: 20px;
+            padding: 15px;
         }
 
         .game-title {
-            font-size: clamp(28px, 7vw, 60px);
+            font-size: clamp(24px, 6vw, 55px);
             color: #ffd700;
             text-shadow: 3px 3px 0px #000;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
 
         .select-text {
-            font-size: 12px;
+            font-size: 11px;
             color: #eee;
             letter-spacing: 1px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         /* Selector de Personajes adaptable a móviles */
         .skin-selector {
             display: flex;
             gap: 12px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             padding: 10px 20px;
             width: 100%;
-            max-width: 600px;
-            overflow-x: auto; /* Scroll horizontal táctil */
-            scrollbar-width: none; /* Ocultar scroll en Firefox */
+            max-width: 650px;
+            overflow-x: auto;
+            scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
         }
-        .skin-selector::-webkit-scrollbar { display: none; } /* Ocultar scroll en Chrome/Safari */
+        .skin-selector::-webkit-scrollbar { display: none; }
 
         .skin-card {
-            min-width: 95px;
+            min-width: 90px;
             background: rgba(0, 0, 0, 0.6);
             border: 3px solid rgba(255, 255, 255, 0.2);
             border-radius: 15px;
-            padding: 12px 5px;
+            padding: 10px 5px;
             cursor: pointer;
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: 0.2s ease-out;
             flex-shrink: 0;
         }
 
         .skin-card.active {
             border-color: #ffd700;
             background: rgba(255, 215, 0, 0.3);
-            transform: scale(1.05) translateY(-3px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.5);
+            transform: scale(1.05);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.5);
         }
 
         .skin-card .img-container {
-            width: 50px;
-            height: 50px;
-            margin: 0 auto 8px;
+            width: 45px;
+            height: 45px;
+            margin: 0 auto 5px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -130,21 +166,21 @@
 
         .stat-box {
             background: rgba(0, 0, 0, 0.75);
-            padding: 8px 16px;
-            border-radius: 50px; /* Forma de burbuja */
+            padding: 6px 14px;
+            border-radius: 50px;
             border: 2px solid #ffd700;
             color: white;
             font-family: 'Arial Black', sans-serif;
-            font-size: 15px;
+            font-size: 14px;
             width: fit-content;
-            box-shadow: 3px 3px 0px rgba(0,0,0,0.3);
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
             display: flex;
             align-items: center;
         }
 
         /* Botones adaptados para dedos grandes */
         #start-btn, #restart-btn {
-            padding: 12px 40px;
+            padding: 12px 45px;
             font-size: 18px;
             font-family: 'Arial Black', sans-serif;
             background: #ffd700;
@@ -163,6 +199,12 @@
     </style>
 </head>
 <body>
+
+    <div id="turn-device-screen">
+        <div class="phone-icon">🔄📱</div>
+        <h2>POR FAVOR GIRA TU TELÉFONO</h2>
+        <p style="font-size: 12px; margin-top: 10px; color: #ccc;">El juego requiere pantalla horizontal para poder jugarse correctamente.</p>
+    </div>
 
     <div id="main-menu">
         <h1 class="game-title">LIZETH TSUNAMI</h1>
@@ -301,7 +343,7 @@
 
         class Box {
             constructor(x, y, img) { this.x = x; this.y = y; this.width = 100; this.height = 100; this.img = img; this.health = 45; this.isBeingPushed = false; this.shakeX = 0; }
-            update(speed) { if (this.isBeingPushed) { this.x -= speed * 0.3; this.shakeX = (Math.random()-0.5)*6; } else { this.x -= speed; this.shakeX = 0; } }
+            update(speed) { if (this.isBeingPushed) { this.x -= speed * 0.3; this.shakeX = (Math.random()-0.5)*6; } else { this.x -= speed; this.shakeX = 0; } }\
             draw(ctx) { if (this.img.complete) { ctx.drawImage(this.img, this.x + this.shakeX, this.y, this.width, this.height); ctx.fillStyle = "white"; ctx.font = "bold 24px Arial"; ctx.textAlign = "center"; ctx.fillText("3", this.x + this.width/2 + this.shakeX, this.y + 40); } }
         }
 
@@ -335,6 +377,7 @@
             ctx.imageSmoothingEnabled = false; 
         }
         window.addEventListener("resize", resize);
+        window.addEventListener("orientationchange", () => { setTimeout(resize, 200); });
         resize();
 
         function drawInfiniteBackground(offsetX) {
@@ -399,7 +442,26 @@
         const GROUND_PERCENT = 0.92, BASE_SPEED = 5.5, DELAY_FRAMES = 8;
         let animationId = null;
 
+        // --- FUNCIÓN PARA SOLICITAR GIRO Y PANTALLA COMPLETA ---
+        function requestFullscreenAndLandscape() {
+            // Pedir pantalla completa en el documento html
+            const docEl = document.documentElement;
+            if (docEl.requestFullscreen) { docEl.requestFullscreen().catch(()=>{}); }
+            else if (docEl.webkitRequestFullscreen) { docEl.webkitRequestFullscreen().catch(()=>{}); }
+            else if (docEl.msRequestFullscreen) { docEl.msRequestFullscreen().catch(()=>{}); }
+
+            // Intentar forzar orientación horizontal mediante JS
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock("landscape").catch((err) => {
+                    console.log("El bloqueo nativo falló, dependerá del giro físico:", err);
+                });
+            }
+        }
+
         function initGame() {
+            // Solicitar configuraciones de pantalla móvil horizontal de inmediato
+            requestFullscreenAndLandscape();
+
             if (animationId) cancelAnimationFrame(animationId);
             window.horde = [new Player(selectedLeaderSkin, true)];
             if (selectedLeaderSkin <= 4) nextSkinId = (selectedLeaderSkin % 4) + 1;
@@ -418,6 +480,8 @@
             updateUI();
             if (!musicStarted) setupMusic();
             setTimeout(() => { if(gameActive) spawnWord(FRASES[Math.floor(Math.random()*FRASES.length)], canvas.width + 100, (canvas.height * GROUND_PERCENT) - 96); }, 800);
+            
+            setTimeout(resize, 150); // Forzar recalculo tras cambio de orientación
             gameLoop();
         }
 
