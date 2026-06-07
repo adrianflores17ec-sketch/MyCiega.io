@@ -3,7 +3,8 @@ const ctx = canvas.getContext("2d");
 
 // --- LÓGICA DE SELECCIÓN Y FONDO ---
 let selectedLeaderSkin = 1; 
-let menuBgX = 0; // Posición del fondo en el menú
+let menuBgX = 0; 
+window.gameActive = false; // Accesible globalmente para input.js
 
 window.selectSkin = function(skinId, element) {
     selectedLeaderSkin = skinId;
@@ -15,12 +16,11 @@ window.selectSkin = function(skinId, element) {
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    ctx.imageSmoothingEnabled = false; // Mantener nitidez
+    ctx.imageSmoothingEnabled = false; 
 }
 window.addEventListener("resize", resize);
 resize();
 
-// Función para dibujar el fondo repetido correctamente
 function drawInfiniteBackground(offsetX) {
     if (!bg1.complete || !bg2.complete) return;
 
@@ -29,11 +29,9 @@ function drawInfiniteBackground(offsetX) {
     let bg2W = bg2.naturalWidth * scale;
     let totalW = bg1W + bg2W;
 
-    // Normalizar el desplazamiento
     let x = offsetX % totalW;
     if (x > 0) x -= totalW;
 
-    // Dibujar hasta llenar el ancho de la pantalla
     while (x < canvas.width) {
         ctx.drawImage(bg1, x, 0, bg1W, canvas.height);
         x += bg1W;
@@ -85,7 +83,7 @@ const palomaFrames = [];
 for(let i=1; i<=5; i++) { let img = new Image(); img.src = `assets/paloma/paloma${i}.png`; palomaFrames.push(img); }
 
 let actionBuffer, explosions, items, obstacles, boxes;
-let goldScore, nextSkinId, bgX, bgSpeed, spawnTimer, startTime, introActive, gameActive, tsunamiTimer, lastSpawnX;
+let goldScore, nextSkinId, bgX, bgSpeed, spawnTimer, startTime, introActive, tsunamiTimer, lastSpawnX;
 const GROUND_PERCENT = 0.92, BASE_SPEED = 5.5, DELAY_FRAMES = 8;
 let animationId = null;
 
@@ -94,17 +92,15 @@ let animationId = null;
 function initGame() {
     if (animationId) cancelAnimationFrame(animationId);
     
-    // Iniciar con la skin seleccionada
     window.horde = [new Player(selectedLeaderSkin, true)];
     
-    // Lógica de rotación de horda
     if (selectedLeaderSkin <= 4) nextSkinId = (selectedLeaderSkin % 4) + 1;
     else nextSkinId = 1;
 
     actionBuffer = []; explosions = []; items = []; obstacles = []; boxes = [];
     goldScore = 0; bgX = 0; bgSpeed = BASE_SPEED;
     spawnTimer = 0; startTime = Date.now(); introActive = true; 
-    gameActive = true; tsunamiTimer = 0; lastSpawnX = 0;
+    window.gameActive = true; tsunamiTimer = 0; lastSpawnX = 0;
     
     document.getElementById("main-menu").style.display = "none";
     document.getElementById("game-over-screen").style.display = "none";
@@ -113,7 +109,7 @@ function initGame() {
     
     updateUI();
     if (!musicStarted) setupMusic();
-    setTimeout(() => { if(gameActive) spawnWord(FRASES[Math.floor(Math.random()*FRASES.length)], canvas.width + 100, (canvas.height * GROUND_PERCENT) - 96); }, 800);
+    setTimeout(() => { if(window.gameActive) spawnWord(FRASES[Math.floor(Math.random()*FRASES.length)], canvas.width + 100, (canvas.height * GROUND_PERCENT) - 96); }, 800);
     gameLoop();
 }
 
@@ -125,7 +121,7 @@ function setupMusic() {
 }
 
 window.leaderJump = () => {
-    if (!gameActive) return;
+    if (!window.gameActive) return;
     let alive = window.horde.filter(p => !p.isDying);
     if (alive.length > 0) {
         alive[0].jump();
@@ -162,7 +158,7 @@ function updateUI() {
 }
 
 function spawnPattern(groundY, gameTime) {
-    if (introActive || !gameActive) return;
+    if (introActive || !window.gameActive) return;
     if (canvas.width - lastSpawnX < 450) return;
     const chance = Math.random();
     if (chance < 0.015) { items.push(new Item('salchipapa', canvas.width + 100, groundY - 160, salchipapaImg)); lastSpawnX = canvas.width + 100; }
@@ -183,14 +179,13 @@ function spawnPattern(groundY, gameTime) {
 }
 
 function gameLoop() {
-    if (!gameActive) return;
+    if (!window.gameActive) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     const gameTime = (Date.now() - startTime) / 1000;
     bgSpeed = (gameTime < 15) ? BASE_SPEED : (gameTime < 45) ? BASE_SPEED + 1.5 : (BASE_SPEED + 3.5) + Math.sin(gameTime * 0.3) * 2;
     if (gameTime >= 15) introActive = false;
 
-    // Fondo
     bgX -= bgSpeed;
     drawInfiniteBackground(bgX);
 
@@ -201,49 +196,109 @@ function gameLoop() {
     if (tsunamiTimer > 0) tsunamiTimer--;
     
     if (aliveHorde.length === 0 && window.horde.length === 0) {
-        gameActive = false; document.getElementById("game-over-screen").style.display = "flex"; return;
+        window.gameActive = false; document.getElementById("game-over-screen").style.display = "flex"; return;
     }
 
-    // Actualizar Líder
     if (aliveHorde.length > 0) {
         const leader = aliveHorde[0]; leader.isLeader = true; let currentFloor = groundY;
-        for(let b of boxes) { if (leader.x + leader.width > b.x + 20 && leader.x < b.x + b.width - 20) { if (leader.y + leader.height <= b.y + 35 && leader.velocityY >= 0) { currentFloor = b.y - leader.height; leader.state = "onBox"; } } }
+        for(let b of boxes) { 
+            if (leader.x + leader.width > b.x + 20 && leader.x < b.x + b.width - 20) { 
+                if (leader.y + leader.height <= b.y + 35 && leader.velocityY >= 0) { 
+                    currentFloor = b.y - leader.height; leader.state = "onBox"; 
+                } 
+            } 
+        }
         leader.updateLeader(currentFloor);
         actionBuffer.push({x: leader.x, y: leader.y, state: leader.state, frame: leader.frame, velocityY: leader.velocityY});
         if (actionBuffer.length > 500) actionBuffer.shift();
-        for (let i = 1; i < aliveHorde.length; i++) { const data = actionBuffer[actionBuffer.length - 1 - (i * DELAY_FRAMES)] || actionBuffer[0]; aliveHorde[i].isLeader = false; aliveHorde[i].updateFollower(data, i); }
+        for (let i = 1; i < aliveHorde.length; i++) { 
+            const data = actionBuffer[actionBuffer.length - 1 - (i * DELAY_FRAMES)] || actionBuffer[0]; 
+            aliveHorde[i].isLeader = false; 
+            aliveHorde[i].updateFollower(data, i); 
+        }
     }
 
-    // Proyectiles y muertes
-    for (let i = window.horde.length - 1; i >= 0; i--) { let p = window.horde[i]; if (p.isDying) { p.updateLeader(groundY); if (p.deathTimer > 100 || p.x + p.width < -100) window.horde.splice(i, 1); } else if (p.x < -80) p.triggerDeath(); }
+    for (let i = window.horde.length - 1; i >= 0; i--) { 
+        let p = window.horde[i]; 
+        if (p.isDying) { 
+            p.updateLeader(groundY); 
+            if (p.deathTimer > 100 || p.x + p.width < -100) window.horde.splice(i, 1); 
+        } else if (p.x < -80) p.triggerDeath(); 
+    }
     
     spawnTimer++; if (spawnTimer > 35) { spawnPattern(groundY, gameTime); spawnTimer = 0; }
     lastSpawnX -= bgSpeed;
 
-    // Dibujar Cajas
+    // --- CORRECCIÓN DE CAJAS ---
     for (let i = boxes.length - 1; i >= 0; i--) {
-        let b = boxes[i]; b.update(bgSpeed); b.draw(ctx); let hEmp = false;
-        for (let p of aliveHorde) { if (p.y + p.height > b.y + 10 && p.x + p.width > b.x + 5 && p.x < b.x + b.width - 15) { hEmp = true; p.x = b.x - p.width + 5; if (aliveHorde.length >= 3) b.isBeingPushed = true; } }
-        if (hEmp && aliveHorde.length >= 3) { b.health -= 3.5; if (b.health <= 0) { explosions.push(new Explosion(b.x, b.y)); explSound.cloneNode().play().catch(()=>{}); boxes.splice(i, 1); addToHorde(5, true); } } else b.isBeingPushed = false;
-        if (b.x < -400) boxes.splice(i, 1);
+        let b = boxes[i]; b.update(bgSpeed); b.draw(ctx); 
+        let hEmp = false;
+        let boxDestroyed = false; // Variable de control
+        
+        for (let p of aliveHorde) { 
+            if (p.y + p.height > b.y + 10 && p.x + p.width > b.x + 5 && p.x < b.x + b.width - 15) { 
+                hEmp = true; 
+                p.x = b.x - p.width + 5; 
+                if (aliveHorde.length >= 3) b.isBeingPushed = true; 
+            } 
+        }
+        
+        if (hEmp && aliveHorde.length >= 3) { 
+            b.health -= 3.5; 
+            if (b.health <= 0) { 
+                explosions.push(new Explosion(b.x, b.y)); 
+                explSound.cloneNode().play().catch(()=>{}); 
+                boxes.splice(i, 1); 
+                boxDestroyed = true; // Marcamos que la caja se borró
+                addToHorde(5, true); 
+            } 
+        } else b.isBeingPushed = false;
+        
+        // Solo verificamos salida de pantalla si NO fue borrada por colisión
+        if (!boxDestroyed && b.x < -400) boxes.splice(i, 1);
     }
     
-    // Obstáculos
+    // --- CORRECCIÓN DE OBSTÁCULOS ---
     for (let i = obstacles.length - 1; i >= 0; i--) {
         obstacles[i].update(bgSpeed); obstacles[i].draw(ctx);
-        for (let p of aliveHorde) { if (checkCollision(p, obstacles[i], (obstacles[i] instanceof Paloma ? 15 : 35))) { explosions.push(new Explosion(obstacles[i].x, obstacles[i].y)); explSound.cloneNode().play().catch(()=>{}); obstacles.splice(i, 1); if (tsunamiTimer <= 0) { p.triggerDeath(); updateUI(); } break; } }
-        if (obstacles[i] && obstacles[i].x < -400) obstacles.splice(i, 1);
+        let obsDestroyed = false; // Variable de control
+        
+        for (let p of aliveHorde) { 
+            if (checkCollision(p, obstacles[i], (obstacles[i] instanceof Paloma ? 15 : 35))) { 
+                explosions.push(new Explosion(obstacles[i].x, obstacles[i].y)); 
+                explSound.cloneNode().play().catch(()=>{}); 
+                obstacles.splice(i, 1); 
+                obsDestroyed = true; // Marcamos que el obstáculo se borró
+                
+                if (tsunamiTimer <= 0) { p.triggerDeath(); updateUI(); } 
+                break; 
+            } 
+        }
+        // Solo verificamos salida de pantalla si NO fue borrado
+        if (!obsDestroyed && obstacles[i] && obstacles[i].x < -400) obstacles.splice(i, 1);
     }
 
     // Explosiones e Items
-    for (let i = explosions.length - 1; i >= 0; i--) { explosions[i].update(bgSpeed); explosions[i].draw(ctx); if (explosions[i].isFinished) explosions.splice(i, 1); }
+    for (let i = explosions.length - 1; i >= 0; i--) { 
+        explosions[i].update(bgSpeed); explosions[i].draw(ctx); 
+        if (explosions[i].isFinished) explosions.splice(i, 1); 
+    }
     for (let i = items.length - 1; i >= 0; i--) {
         items[i].update(bgSpeed); items[i].draw(ctx); let hit = false;
-        for (let m of aliveHorde) { if (checkCollision(m, items[i], -15)) { hit = true; if (items[i].type === 'gold') { goldScore++; document.getElementById("gold-count").innerText = goldScore; let s = coinSound.cloneNode(); s.volume = 0.05; s.play().catch(()=>{}); } else if (items[i].type === 'bread') addToHorde(null, true); else if (items[i].type === 'salchipapa') { addToHorde(5, true); addToHorde(7, true); } break; } }
+        for (let m of aliveHorde) { 
+            if (checkCollision(m, items[i], -15)) { 
+                hit = true; 
+                if (items[i].type === 'gold') { 
+                    goldScore++; document.getElementById("gold-count").innerText = goldScore; 
+                    let s = coinSound.cloneNode(); s.volume = 0.05; s.play().catch(()=>{}); 
+                } else if (items[i].type === 'bread') addToHorde(null, true); 
+                else if (items[i].type === 'salchipapa') { addToHorde(5, true); addToHorde(7, true); } 
+                break; 
+            } 
+        }
         if (hit || items[i].x < -1200) items.splice(i, 1);
     }
 
-    // Dibujar personajes
     let sorted = [...window.horde].sort((a,b) => (a.y + a.groupOffsetY) - (b.y + b.groupOffsetY));
     for (let m of sorted) m.draw(ctx, tsunamiTimer > 0);
 
@@ -254,26 +309,37 @@ function checkCollision(p, obj, margin) { return (p.x + margin < obj.x + obj.wid
 
 // --- MENÚ DINÁMICO ---
 function drawMenu() {
-    if (gameActive) return;
+    if (window.gameActive) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Fondo corriendo
     menuBgX -= 2.5; 
     drawInfiniteBackground(menuBgX);
 
-    // Personaje de vista previa
     const groundY = (canvas.height * GROUND_PERCENT) - 96;
     let p = new Player(selectedLeaderSkin, true);
     p.x = canvas.width / 2 - 48;
     p.y = groundY;
-    p.frame = Math.floor(Date.now() / 100) % 4; // Animación de correr
+    p.frame = Math.floor(Date.now() / 100) % 4; 
     p.draw(ctx, false);
 
     requestAnimationFrame(drawMenu);
 }
 
-document.getElementById("start-btn").addEventListener("click", initGame);
-document.getElementById("restart-btn").addEventListener("click", initGame);
+function tryEnterFullscreen() {
+    let elem = document.documentElement;
+    if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(err => console.log("Error intentando Fullscreen:", err));
+    }
+}
 
-gameActive = false;
+document.getElementById("start-btn").addEventListener("click", () => {
+    tryEnterFullscreen();
+    initGame();
+});
+
+document.getElementById("restart-btn").addEventListener("click", () => {
+    tryEnterFullscreen();
+    initGame();
+});
+
 drawMenu();
