@@ -1,50 +1,78 @@
-// =====================================================
-// SETUP CANVAS
-// =====================================================
-const canvas = document.getElementById("game");
-const ctx    = canvas.getContext("2d");
+// ═══════════════════════════════════════════════════════
+//  LIZETH TSUNAMI — game.js  (reescritura completa)
+// ═══════════════════════════════════════════════════════
 
-let selectedLeaderSkin = 1;
-let menuBgX            = 0;
-window.gameActive      = false;
+const canvas = document.getElementById('game');
+const ctx    = canvas.getContext('2d');
 
-window.selectSkin = function(skinId, element) {
-    selectedLeaderSkin = skinId;
-    document.querySelectorAll('.skin-card').forEach(c => c.classList.remove('active'));
-    element.classList.add('active');
-    if (breadSound) breadSound.cloneNode().play().catch(() => {});
-    menuPlayer = null; // fuerza recrear el player del menú con nueva skin
-};
-
+// ── Resize ──────────────────────────────────────────────
 function resize() {
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
     ctx.imageSmoothingEnabled = false;
 }
-window.addEventListener("resize", resize);
+window.addEventListener('resize', resize);
 resize();
 
-// =====================================================
-// FONDO INFINITO
-// =====================================================
-function drawInfiniteBackground(offsetX) {
-    if (!bg1.complete || !bg2.complete || !bg1.naturalHeight) return;
-    const scale  = canvas.height / bg1.naturalHeight;
-    const bg1W   = bg1.naturalWidth * scale;
-    const bg2W   = bg2.naturalWidth * scale;
-    const totalW = bg1W + bg2W;
-    let x = offsetX % totalW;
-    if (x > 0) x -= totalW;
-    while (x < canvas.width) {
-        ctx.drawImage(bg1, x, 0, bg1W, canvas.height); x += bg1W;
-        ctx.drawImage(bg2, x, 0, bg2W, canvas.height); x += bg2W;
+// ── Assets globales ─────────────────────────────────────
+const IMG = {
+    bg1:       loadCached('assets/background.png'),
+    bg2:       loadCached('assets/background2.png'),
+    coin:      loadCached('assets/monedas.png'),
+    bread:     loadCached('assets/pan.png'),
+    barrel:    loadCached('assets/barril.png'),
+    balla:     loadCached('assets/balla.png'),
+    auto:      loadCached('assets/auto.png'),
+    barrera2:  loadCached('assets/barrera2.png'),
+    box:       loadCached('assets/caja.png'),
+    salchi:    loadCached('assets/salchipapa.png'),
+};
+
+// ── Sonidos ─────────────────────────────────────────────
+const SFX = {
+    coin:  new Audio('assets/moneda.mp3'),
+    bread: new Audio('assets/pan.mp3'),
+    expl:  new Audio('assets/explosion.mp3'),
+};
+function sfx(name, vol = 1) {
+    try { const s = SFX[name].cloneNode(); s.volume = vol; s.play(); } catch(_) {}
+}
+
+// ── Música ──────────────────────────────────────────────
+const PLAYLIST = ['assets/musica2.mp3','assets/musica1.mp3','assets/musica3.mp3','assets/musica4.mp3'];
+let musicIdx = 0, bgMusic = null, musicOn = false;
+
+function playMusic() {
+    if (bgMusic) bgMusic.pause();
+    bgMusic         = new Audio(PLAYLIST[musicIdx]);
+    bgMusic.volume  = 0.7;
+    bgMusic.onended = () => { musicIdx = (musicIdx + 1) % PLAYLIST.length; playMusic(); bgMusic.play().catch(()=>{}); };
+}
+
+function startMusicOnce() {
+    if (!musicOn && bgMusic) {
+        bgMusic.play().then(() => { musicOn = true; }).catch(() => {});
     }
 }
 
-// =====================================================
-// ASSETS GLOBALES
-// =====================================================
-const LETRAS_COIN = {
+// ── Fondo infinito ──────────────────────────────────────
+function drawBg(ox) {
+    const b1 = IMG.bg1, b2 = IMG.bg2;
+    if (!b1.complete || !b1.naturalHeight || !b2.complete) return;
+    const sc   = canvas.height / b1.naturalHeight;
+    const w1   = b1.naturalWidth * sc;
+    const w2   = b2.naturalWidth * sc;
+    const tot  = w1 + w2;
+    let x = ox % tot;
+    if (x > 0) x -= tot;
+    while (x < canvas.width) {
+        ctx.drawImage(b1, x, 0, w1, canvas.height); x += w1;
+        ctx.drawImage(b2, x, 0, w2, canvas.height); x += w2;
+    }
+}
+
+// ── Letras de monedas ────────────────────────────────────
+const LETRAS = {
     'T':[[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
     'E':[[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,0],[1,1,1,1,1]],
     'A':[[0,1,1,1,0],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1]],
@@ -62,278 +90,221 @@ const LETRAS_COIN = {
     'Ñ':[[1,1,1,0,0],[1,0,0,0,1],[1,1,0,0,1],[1,0,1,0,1],[1,0,0,1,1]],
     '1':[[0,0,1,0,0],[0,1,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,1,1,1,0]],
     ':':[[0,0,0,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,1,0,0],[0,0,0,0,0]],
-    ' ':[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]
+    ' ':[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+};
+const FRASES = ['TE EXTRAÑO','TE AMO','MI CIEGA','MI CHIQUITA','MI ENOJONA','11:11'];
+
+// ── Constantes de juego ──────────────────────────────────
+const GROUND_PCT  = 0.92;
+const BASE_SPD    = 5.5;
+const DELAY_FR    = 8;
+const MAX_HORDE   = 30;
+
+// ── Estado global ────────────────────────────────────────
+let selectedSkin = 1;
+window.gameActive = false;
+
+let horde, actionBuf, explosions, items, obstacles, boxes;
+let gold, nextSkin, bgX, spd, spawnT, startT, intro, tsTimer, lastSpX;
+let loopId = null;
+
+function groundY() { return canvas.height * GROUND_PCT - 96; }
+
+// ── Selección de skin ────────────────────────────────────
+window.selectSkin = function(id, el) {
+    selectedSkin = id;
+    document.querySelectorAll('.skin-card').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    sfx('bread');
+    menuP = null; // refrescar personaje del menú
 };
 
-const FRASES  = ["TE EXTRAÑO","TE AMO","MI CIEGA","MI CHIQUITA","MI ENOJONA","11:11"];
-const playlist = ["assets/musica2.mp3","assets/musica1.mp3","assets/musica3.mp3","assets/musica4.mp3"];
-let musicIndex = 0, currentBgMusic = null, musicStarted = false;
-
-const coinSound   = new Audio("assets/moneda.mp3");
-const breadSound  = new Audio("assets/pan.mp3");
-const explSound   = new Audio("assets/explosion.mp3");
-
-const bg1         = new Image(); bg1.src = "assets/background.png";
-const bg2         = new Image(); bg2.src = "assets/background2.png";
-const coinImg     = new Image(); coinImg.src = "assets/monedas.png";
-const breadImg    = new Image(); breadImg.src = "assets/pan.png";
-const barrelImg   = new Image(); barrelImg.src = "assets/barril.png";
-const ballaImg    = new Image(); ballaImg.src = "assets/balla.png";
-const autoImg     = new Image(); autoImg.src = "assets/auto.png";
-const barrera2Img = new Image(); barrera2Img.src = "assets/barrera2.png";
-const boxImg      = new Image(); boxImg.src = "assets/caja.png";
-const salchipapaImg = new Image(); salchipapaImg.src = "assets/salchipapa.png";
-
-const palomaFrames = [];
-for (let i = 1; i <= 5; i++) {
-    const img = new Image(); img.src = `assets/paloma/paloma${i}.png`;
-    palomaFrames.push(img);
+// ── Colisión AABB ────────────────────────────────────────
+function hits(a, b, margin = 0) {
+    return a.x + margin       < b.x + b.width  &&
+           a.x + a.width - margin > b.x          &&
+           a.y + margin       < b.y + b.height  &&
+           a.y + a.height - margin > b.y;
 }
 
-// =====================================================
-// ESTADO DEL JUEGO
-// =====================================================
-const GROUND_PERCENT = 0.92;
-const BASE_SPEED     = 5.5;
-const DELAY_FRAMES   = 8;
-
-let actionBuffer, explosions, items, obstacles, boxes;
-let goldScore, nextSkinId, bgX, bgSpeed;
-let spawnTimer, startTime, introActive, tsunamiTimer, lastSpawnX;
-let animationId = null;
-
-// =====================================================
-// MÚSICA
-// =====================================================
-function setupMusic() {
-    if (currentBgMusic) { currentBgMusic.pause(); }
-    currentBgMusic         = new Audio(playlist[musicIndex]);
-    currentBgMusic.volume  = 0.7;
-    currentBgMusic.onended = () => {
-        musicIndex = (musicIndex + 1) % playlist.length;
-        setupMusic();
-        currentBgMusic.play().catch(() => {});
-    };
-}
-
-// =====================================================
-// INICIAR JUEGO
-// =====================================================
-function initGame() {
-    // Detener loop anterior limpiamente
-    window.gameActive = false;
-    if (animationId !== null) {
-        cancelAnimationFrame(animationId);
-        animationId = null;
+// ── Spawnear palabra de monedas ──────────────────────────
+function spawnWord(frase, sx, gy) {
+    const sp = 25, ls = 45;
+    let cx = sx;
+    for (const ch of frase.toUpperCase()) {
+        const m = LETRAS[ch] || LETRAS[' '];
+        for (let r = 0; r < 5; r++)
+            for (let c = 0; c < 5; c++)
+                if (m[r][c]) items.push(new Item('gold', cx + c*sp, (gy-250) + r*sp, IMG.coin));
+        cx += 5*sp + ls;
     }
-
-    // Reset estado
-    window.horde = [new Player(selectedLeaderSkin, true)];
-    nextSkinId   = (selectedLeaderSkin <= 4) ? (selectedLeaderSkin % 4) + 1 : 1;
-
-    actionBuffer = []; explosions = []; items = []; obstacles = []; boxes = [];
-    goldScore    = 0;
-    bgX          = 0;
-    bgSpeed      = BASE_SPEED;
-    spawnTimer   = 0;
-    startTime    = Date.now();
-    introActive  = true;
-    tsunamiTimer = 0;
-    lastSpawnX   = 0;
-
-    document.getElementById("main-menu").style.display      = "none";
-    document.getElementById("game-over-screen").style.display = "none";
-    document.getElementById("ui").style.display             = "flex";
-    document.getElementById("gold-count").innerText         = "0";
-    updateUI();
-
-    if (!musicStarted) setupMusic();
-
-    // Esperar un poco antes de activar el loop para que el DOM se actualice
-    setTimeout(() => {
-        window.gameActive = true;
-        // Frase inicial
-        spawnWord(
-            FRASES[Math.floor(Math.random() * FRASES.length)],
-            canvas.width + 100,
-            groundYNow()
-        );
-        gameLoop();
-    }, 50);
 }
 
-function groundYNow() {
-    return (canvas.height * GROUND_PERCENT) - 96;
-}
-
-// =====================================================
-// SALTO DEL LÍDER
-// =====================================================
-window.leaderJump = () => {
-    if (!window.gameActive) return;
-    const alive = window.horde.filter(p => !p.isDying);
-    if (alive.length > 0) {
-        alive[0].jump();
-        if (!musicStarted && currentBgMusic) {
-            currentBgMusic.play().then(() => { musicStarted = true; }).catch(() => {});
-        }
-    }
-};
-
-// =====================================================
-// HORDA
-// =====================================================
-function addToHorde(skinId = null, jump = false) {
-    if (window.horde.filter(p => !p.isDying).length >= 30) return;
-    const finalSkin = skinId || nextSkinId;
-    window.horde.push(new Player(finalSkin, false, jump));
-    if (skinId === null && nextSkinId <= 4) nextSkinId = (nextSkinId % 4) + 1;
-    breadSound.cloneNode().play().catch(() => {});
+// ── Agregar a la horda ───────────────────────────────────
+function addToHorde(skinId, jump = false) {
+    const alive = horde.filter(p => !p.dying);
+    if (alive.length >= MAX_HORDE) return;
+    const sid = skinId || nextSkin;
+    horde.push(new Player(sid, false, jump));
+    if (!skinId && nextSkin <= 4) nextSkin = nextSkin % 4 + 1;
+    sfx('bread');
     updateUI();
 }
 
 function updateUI() {
-    document.getElementById("lizeth-count").innerText =
-        window.horde.filter(p => !p.isDying).length;
+    const n = horde.filter(p => !p.dying).length;
+    document.getElementById('lizeth-count').textContent = n;
 }
 
-// =====================================================
-// SPAWN DE PALABRAS Y PATRONES
-// =====================================================
-function spawnWord(frase, startX, groundY) {
-    const coinSp = 25, letSp = 45;
-    let curX = startX;
-    for (const char of frase.toUpperCase()) {
-        const matrix = LETRAS_COIN[char] || LETRAS_COIN[' '];
-        for (let r = 0; r < matrix.length; r++)
-            for (let c = 0; c < matrix[r].length; c++)
-                if (matrix[r][c] === 1)
-                    items.push(new Item('gold', curX + c * coinSp, (groundY - 250) + r * coinSp, coinImg));
-        curX += 5 * coinSp + letSp;
-    }
-}
-
-function spawnPattern(groundY) {
-    if (introActive || !window.gameActive) return;
-    if (canvas.width - lastSpawnX < 450) return;
-
-    const chance = Math.random();
-    const xPos   = canvas.width + 100;
-
-    if (chance < 0.015) {
-        items.push(new Item('salchipapa', xPos, groundY - 160, salchipapaImg));
-        lastSpawnX = xPos;
-    } else if (chance < 0.065) {
-        boxes.push(new Box(xPos, groundY - 4, boxImg));
-        lastSpawnX = xPos;
-    } else if (chance < 0.515) {
-        const r = Math.random();
-        if      (r < 0.25) obstacles.push(new Paloma(xPos, groundY - 130, palomaFrames));
-        else if (r < 0.45) obstacles.push(new Obstacle(xPos, groundY - 4,   ballaImg,   'balla'));
-        else if (r < 0.65) obstacles.push(new Obstacle(xPos, groundY - 35,  barrera2Img,'barrera2'));
-        else if (r < 0.85) obstacles.push(new Obstacle(xPos, groundY - 24,  barrelImg,  'barril'));
-        else                obstacles.push(new Obstacle(xPos, groundY - 4,   autoImg,    'auto'));
-        lastSpawnX = xPos;
+// ── Patrón de spawn ──────────────────────────────────────
+function spawnPattern(gy) {
+    if (intro || !window.gameActive) return;
+    if (canvas.width - lastSpX < 450) return;
+    const x = canvas.width + 100;
+    const r = Math.random();
+    if (r < 0.015) {
+        items.push(new Item('salchipapa', x, gy - 160, IMG.salchi)); lastSpX = x;
+    } else if (r < 0.065) {
+        boxes.push(new Box(x, gy - 4, IMG.box)); lastSpX = x;
+    } else if (r < 0.515) {
+        const r2 = Math.random();
+        if      (r2 < 0.25) obstacles.push(new Paloma(x, gy - 130));
+        else if (r2 < 0.45) obstacles.push(new Obstacle(x, gy - 4,   IMG.balla,    'balla'));
+        else if (r2 < 0.65) obstacles.push(new Obstacle(x, gy - 35,  IMG.barrera2, 'barrera2'));
+        else if (r2 < 0.85) obstacles.push(new Obstacle(x, gy - 24,  IMG.barrel,   'barril'));
+        else                 obstacles.push(new Obstacle(x, gy - 4,   IMG.auto,     'auto'));
+        lastSpX = x;
     } else {
         if (Math.random() < 0.5) {
-            items.push(new Item('bread', xPos, groundY - 140, breadImg));
-            lastSpawnX = xPos;
+            items.push(new Item('bread', x, gy - 140, IMG.bread)); lastSpX = x;
         } else {
             for (let i = 0; i < 6; i++)
-                items.push(new Item('gold', xPos + i * 75, (groundY + 20) - Math.sin((i / 5) * Math.PI) * 180, coinImg));
-            lastSpawnX = xPos + 450;
+                items.push(new Item('gold', x + i*75, (gy+20) - Math.sin((i/5)*Math.PI)*180, IMG.coin));
+            lastSpX = x + 450;
         }
     }
 }
 
-// =====================================================
-// COLISIÓN
-// =====================================================
-function checkCollision(p, obj, margin) {
-    return (
-        p.x + margin         < obj.x + obj.width  &&
-        p.x + p.width - margin > obj.x             &&
-        p.y + margin         < obj.y + obj.height  &&
-        p.y + p.height - margin > obj.y
-    );
+// ── Salto del líder ──────────────────────────────────────
+window.leaderJump = function() {
+    if (!window.gameActive) return;
+    const alive = horde.filter(p => !p.dying);
+    if (alive.length) { alive[0].doJump(); startMusicOnce(); }
+};
+
+// ── Init / Reset ─────────────────────────────────────────
+function initGame() {
+    window.gameActive = false;
+    if (loopId !== null) { cancelAnimationFrame(loopId); loopId = null; }
+
+    horde      = [new Player(selectedSkin, true)];
+    nextSkin   = selectedSkin <= 4 ? selectedSkin % 4 + 1 : 1;
+    actionBuf  = []; explosions = []; items = []; obstacles = []; boxes = [];
+    gold       = 0;
+    bgX        = 0;
+    spd        = BASE_SPD;
+    spawnT     = 0;
+    startT     = Date.now();
+    intro      = true;
+    tsTimer    = 0;
+    lastSpX    = 0;
+
+    document.getElementById('main-menu').style.display       = 'none';
+    document.getElementById('game-over-screen').style.display = 'none';
+    document.getElementById('ui').style.display              = 'flex';
+    document.getElementById('gold-count').textContent        = '0';
+    updateUI();
+
+    playMusic();
+
+    window.gameActive = true;
+
+    // Primera frase después de que el personaje llega a posición
+    setTimeout(() => {
+        if (window.gameActive) spawnWord(FRASES[Math.floor(Math.random()*FRASES.length)], canvas.width+100, groundY());
+    }, 1200);
+
+    gameLoop();
 }
 
-// =====================================================
-// GAME LOOP PRINCIPAL
-// =====================================================
+// ── Fullscreen ───────────────────────────────────────────
+function tryFullscreen() {
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+}
+
+// ── GAME LOOP ─────────────────────────────────────────────
 function gameLoop() {
     if (!window.gameActive) return;
+    loopId = requestAnimationFrame(gameLoop);
 
-    // Pedir siguiente frame AL PRINCIPIO para que cancelAnimationFrame funcione bien
-    animationId = requestAnimationFrame(gameLoop);
-
-    // Limpiar canvas — resetear filter explícitamente antes de cualquier draw
-    ctx.filter = "none";
-    ctx.globalAlpha = 1;
+    // ── limpiar canvas (sin filters pendientes) ──────────
+    ctx.setTransform(1,0,0,1,0,0);  // reset transform
+    ctx.globalAlpha   = 1;
+    ctx.globalCompositeOperation = 'source-over';
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Tiempo y velocidad
-    const gameTime = (Date.now() - startTime) / 1000;
-    if (gameTime >= 15) introActive = false;
-    bgSpeed = gameTime < 15  ? BASE_SPEED
-            : gameTime < 45  ? BASE_SPEED + 1.5
-            : (BASE_SPEED + 3.5) + Math.sin(gameTime * 0.3) * 2;
+    // ── tiempo y velocidad ───────────────────────────────
+    const gt = (Date.now() - startT) / 1000;
+    if (gt >= 15) intro = false;
+    spd = gt < 15 ? BASE_SPD
+        : gt < 45 ? BASE_SPD + 1.5
+        : BASE_SPD + 3.5 + Math.sin(gt * 0.3) * 2;
 
-    bgX -= bgSpeed;
-    drawInfiniteBackground(bgX);
+    // ── fondo ────────────────────────────────────────────
+    bgX -= spd;
+    drawBg(bgX);
 
-    const groundY    = groundYNow();
-    const aliveHorde = window.horde.filter(p => !p.isDying);
+    const gy    = groundY();
+    const alive = horde.filter(p => !p.dying);
 
-    // Tsunami
-    if (aliveHorde.length >= 15 && tsunamiTimer <= 0) tsunamiTimer = 300;
-    if (tsunamiTimer > 0) tsunamiTimer--;
+    // ── tsunami mode ─────────────────────────────────────
+    if (alive.length >= 15 && tsTimer <= 0) tsTimer = 300;
+    if (tsTimer > 0) tsTimer--;
 
-    // ---- GAME OVER ----
-    // Condición: no hay nadie vivo Y la horda entera ya está vacía
-    if (aliveHorde.length === 0 && window.horde.length === 0) {
+    // ── GAME OVER check ───────────────────────────────────
+    // Solo cuando la horda está completamente vacía
+    if (horde.length === 0) {
         window.gameActive = false;
-        cancelAnimationFrame(animationId);
-        animationId = null;
-        document.getElementById("game-over-screen").style.display = "flex";
+        cancelAnimationFrame(loopId); loopId = null;
+        document.getElementById('game-over-screen').style.display = 'flex';
         return;
     }
 
-    // ---- ACTUALIZAR LÍDER ----
-    if (aliveHorde.length > 0) {
-        const leader = aliveHorde[0];
+    // ── Actualizar líder ─────────────────────────────────
+    if (alive.length > 0) {
+        const leader = alive[0];
         leader.isLeader = true;
 
-        // Piso sobre cajas
-        let currentFloor = groundY;
+        // ¿está sobre una caja?
+        let floor = gy;
         for (const b of boxes) {
-            if (leader.x + leader.width > b.x + 20 && leader.x < b.x + b.width - 20) {
-                if (leader.y + leader.height <= b.y + 35 && leader.velocityY >= 0) {
-                    currentFloor   = b.y - leader.height;
-                    leader.state   = "onBox";
-                }
+            if (leader.x + leader.w > b.x + 20 && leader.x < b.x + b.w - 20 &&
+                leader.y + leader.h <= b.y + 35 && leader.vy >= 0) {
+                floor        = b.y - leader.h;
+                leader.state = 'onBox';
             }
         }
-        leader.updateLeader(currentFloor);
+        leader.updateAsLeader(floor);
 
-        // Buffer de acciones para followers
-        actionBuffer.push({ x: leader.x, y: leader.y, state: leader.state, frame: leader.frame, velocityY: leader.velocityY });
-        if (actionBuffer.length > 500) actionBuffer.shift();
+        actionBuf.push({ x: leader.x, y: leader.y, state: leader.state, frame: leader.frame, vy: leader.vy });
+        if (actionBuf.length > 600) actionBuf.shift();
 
-        for (let i = 1; i < aliveHorde.length; i++) {
-            const data = actionBuffer[actionBuffer.length - 1 - i * DELAY_FRAMES] || actionBuffer[0];
-            aliveHorde[i].isLeader = false;
-            aliveHorde[i].updateFollower(data, i);
+        for (let i = 1; i < alive.length; i++) {
+            const snap = actionBuf[actionBuf.length - 1 - i * DELAY_FR] || actionBuf[0];
+            alive[i].isLeader = false;
+            alive[i].updateAsFollower(snap, i);
         }
     }
 
-    // ---- LIMPIAR HORDA (muriendo / fuera de pantalla) ----
-    for (let i = window.horde.length - 1; i >= 0; i--) {
-        const p = window.horde[i];
-        if (p.isDying) {
-            p.updateLeader(groundY);
-            if (p.deathTimer > 90 || p.x + p.width < -200) {
-                window.horde.splice(i, 1);
+    // ── Actualizar/limpiar muriendo ───────────────────────
+    for (let i = horde.length - 1; i >= 0; i--) {
+        const p = horde[i];
+        if (p.dying) {
+            p.updateAsLeader(gy);
+            // Eliminar cuando ya salió de pantalla o llevan mucho tiempo
+            if (p.deathT > 80 || p.x + p.w < -150) {
+                horde.splice(i, 1);
                 updateUI();
             }
         } else if (p.x < -80) {
@@ -341,161 +312,137 @@ function gameLoop() {
         }
     }
 
-    // ---- SPAWN ----
-    spawnTimer++;
-    if (spawnTimer > 35) { spawnPattern(groundY); spawnTimer = 0; }
-    lastSpawnX -= bgSpeed;
+    // ── Spawn timer ───────────────────────────────────────
+    if (++spawnT > 35) { spawnPattern(gy); spawnT = 0; }
+    lastSpX -= spd;
 
-    // ---- CAJAS ----
+    // ── CAJAS ─────────────────────────────────────────────
     for (let i = boxes.length - 1; i >= 0; i--) {
         const b = boxes[i];
-        b.update(bgSpeed);
+        b.update(spd);
         b.draw(ctx);
 
         let touching = false;
-        for (const p of aliveHorde) {
-            if (p.y + p.height > b.y + 10 &&
-                p.x + p.width  > b.x + 5  &&
-                p.x            < b.x + b.width - 15) {
+        for (const p of alive) {
+            if (p.y + p.h > b.y + 10 && p.x + p.w > b.x + 5 && p.x < b.x + b.w - 15) {
                 touching = true;
-                p.x = b.x - p.width + 5;
-                if (aliveHorde.length >= 3) b.isBeingPushed = true;
+                p.x = b.x - p.w + 5;
             }
         }
+        b.pushed = touching && alive.length >= 3;
 
-        if (touching && aliveHorde.length >= 3) {
-            b.health -= 3.5;
-            if (b.health <= 0) {
+        if (b.pushed) {
+            b.hp -= 3.5;
+            if (b.hp <= 0) {
                 explosions.push(new Explosion(b.x, b.y));
-                explSound.cloneNode().play().catch(() => {});
+                sfx('expl');
                 boxes.splice(i, 1);
                 addToHorde(5, true);
-                continue; // saltar al siguiente, la caja ya no existe
+                continue;
             }
-        } else {
-            b.isBeingPushed = false;
         }
-
-        if (boxes[i] && boxes[i].x < -400) boxes.splice(i, 1);
+        if (boxes[i] && b.x < -400) boxes.splice(i, 1);
     }
 
-    // ---- OBSTÁCULOS ----
+    // ── OBSTÁCULOS ────────────────────────────────────────
     for (let i = obstacles.length - 1; i >= 0; i--) {
         const obs = obstacles[i];
-        obs.update(bgSpeed);
+        obs.update(spd);
         obs.draw(ctx);
 
-        let hit = false;
-        for (const p of aliveHorde) {
-            if (checkCollision(p, obs, obs instanceof Paloma ? 15 : 35)) {
+        let collided = false;
+        for (const p of alive) {
+            const margin = obs instanceof Paloma ? 15 : 35;
+            if (hits(p, obs, margin)) {
                 explosions.push(new Explosion(obs.x, obs.y));
-                explSound.cloneNode().play().catch(() => {});
+                sfx('expl');
                 obstacles.splice(i, 1);
-                hit = true;
-                if (tsunamiTimer <= 0) { p.triggerDeath(); updateUI(); }
+                collided = true;
+                if (tsTimer <= 0) { p.triggerDeath(); updateUI(); }
                 break;
             }
         }
-        if (hit) continue;
-        if (obstacles[i] && obstacles[i].x < -400) obstacles.splice(i, 1);
+        if (collided) continue;
+        if (obs.x < -400) obstacles.splice(i, 1);
     }
 
-    // ---- EXPLOSIONES ----
-    ctx.filter = "none";
+    // ── EXPLOSIONES ───────────────────────────────────────
     for (let i = explosions.length - 1; i >= 0; i--) {
-        explosions[i].update(bgSpeed);
+        explosions[i].update(spd);
         explosions[i].draw(ctx);
-        if (explosions[i].isFinished) explosions.splice(i, 1);
+        if (explosions[i].done) explosions.splice(i, 1);
     }
 
-    // ---- ITEMS ----
-    ctx.filter = "none";
+    // ── ITEMS ─────────────────────────────────────────────
     for (let i = items.length - 1; i >= 0; i--) {
-        items[i].update(bgSpeed);
-        items[i].draw(ctx);
+        const it = items[i];
+        it.update(spd);
+        it.draw(ctx);
         let picked = false;
-        for (const m of aliveHorde) {
-            if (checkCollision(m, items[i], -15)) {
+        for (const p of alive) {
+            if (hits(p, it, -15)) {
                 picked = true;
-                const t = items[i].type;
-                if (t === 'gold') {
-                    goldScore++;
-                    document.getElementById("gold-count").innerText = goldScore;
-                    const s = coinSound.cloneNode(); s.volume = 0.05; s.play().catch(() => {});
-                } else if (t === 'bread') {
+                if (it.type === 'gold') {
+                    gold++;
+                    document.getElementById('gold-count').textContent = gold;
+                    sfx('coin', 0.05);
+                } else if (it.type === 'bread') {
                     addToHorde(null, true);
-                } else if (t === 'salchipapa') {
-                    addToHorde(5, true);
-                    addToHorde(7, true);
+                } else if (it.type === 'salchipapa') {
+                    addToHorde(5, true); addToHorde(7, true);
                 }
                 break;
             }
         }
-        if (picked || items[i].x < -1200) items.splice(i, 1);
+        if (picked || it.x < -1200) items.splice(i, 1);
     }
 
-    // ---- DIBUJAR HORDA ----
-    // Resetear filter antes de dibujar personajes
-    ctx.filter = "none";
-    ctx.globalAlpha = 1;
+    // ── DIBUJAR HORDA ────────────────────────────────────
+    // Ordenar por Y para que los de atrás se dibujen primero
+    const sorted = [...horde].sort((a, b) => (a.y + a.offY) - (b.y + b.offY));
+    for (const p of sorted) p.draw(ctx, tsTimer > 0);
 
-    const sorted = [...window.horde].sort((a, b) =>
-        (a.y + a.groupOffsetY) - (b.y + b.groupOffsetY)
-    );
-    for (const m of sorted) m.draw(ctx, tsunamiTimer > 0);
-
-    // Garantizar que el filter quede limpio al final del frame
-    ctx.filter = "none";
+    // ── garantizar estado limpio del canvas ───────────────
     ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
 }
 
-// =====================================================
-// MENÚ ANIMADO
-// =====================================================
-let menuPlayer    = null;
-let menuAnimId    = null;
+// ── MENÚ ANIMADO ─────────────────────────────────────────
+let menuP   = null;
+let menuBgX = 0;
+let menuId  = null;
 
 function drawMenu() {
     if (window.gameActive) return;
+    menuId = requestAnimationFrame(drawMenu);
 
-    ctx.filter = "none";
     ctx.globalAlpha = 1;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    menuBgX -= 2;
+    drawBg(menuBgX);
 
-    menuBgX -= 2.5;
-    drawInfiniteBackground(menuBgX);
-
-    if (!menuPlayer || menuPlayer.skinID !== selectedLeaderSkin) {
-        menuPlayer = new Player(selectedLeaderSkin, true);
+    if (!menuP || menuP.skinID !== selectedSkin) {
+        menuP = new Player(selectedSkin, true);
     }
-    menuPlayer.x     = canvas.width / 2 - 48;
-    menuPlayer.y     = groundYNow();
-    menuPlayer.state = "run";
-    menuPlayer.frame = Math.floor(Date.now() / 100) % 4;
-    menuPlayer.draw(ctx, false);
-
-    menuAnimId = requestAnimationFrame(drawMenu);
+    menuP.x     = canvas.width / 2 - 48;
+    menuP.y     = groundY();
+    menuP.state = 'run';
+    menuP.frame = Math.floor(Date.now() / 100) % 4;
+    menuP.draw(ctx, false);
 }
 
-// =====================================================
-// FULLSCREEN & BOTONES
-// =====================================================
-function tryEnterFullscreen() {
-    const el = document.documentElement;
-    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
-}
-
-document.getElementById("start-btn").addEventListener("click", () => {
-    tryEnterFullscreen();
-    // Detener el loop del menú antes de iniciar el juego
-    if (menuAnimId !== null) { cancelAnimationFrame(menuAnimId); menuAnimId = null; }
+// ── Botones ───────────────────────────────────────────────
+document.getElementById('start-btn').addEventListener('click', () => {
+    tryFullscreen();
+    if (menuId !== null) { cancelAnimationFrame(menuId); menuId = null; }
     initGame();
 });
 
-document.getElementById("restart-btn").addEventListener("click", () => {
-    tryEnterFullscreen();
-    if (menuAnimId !== null) { cancelAnimationFrame(menuAnimId); menuAnimId = null; }
+document.getElementById('restart-btn').addEventListener('click', () => {
+    tryFullscreen();
+    if (menuId !== null) { cancelAnimationFrame(menuId); menuId = null; }
     initGame();
 });
 
+// ── Arrancar menú ─────────────────────────────────────────
 drawMenu();
