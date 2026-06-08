@@ -1,44 +1,89 @@
+// ─────────────────────────────────────────────
+//  ITEMS, OBSTÁCULOS, EXPLOSIONES
+// ─────────────────────────────────────────────
+
 class Item {
     constructor(type, x, y, img) {
-        this.type = type; this.x = x; this.y = y;
-        this.width = (type === 'salchipapa') ? 100 : 45;
-        this.height = (type === 'salchipapa') ? 100 : 45;
-        this.img = img;
+        this.type = type; this.x = x; this.y = y; this.img = img;
+        this.w = type === 'salchipapa' ? 100 : 45;
+        this.h = type === 'salchipapa' ? 100 : 45;
     }
-    update(speed) { this.x -= speed; }
-    draw(ctx) { if (this.img.complete) ctx.drawImage(this.img, this.x, this.y, this.width, this.height); }
+    get width()  { return this.w; }
+    get height() { return this.h; }
+    update(spd)  { this.x -= spd; }
+    draw(ctx)    { if (this.img && this.img.complete && this.img.naturalWidth) ctx.drawImage(this.img, this.x, this.y, this.w, this.h); }
 }
 
 class Obstacle {
     constructor(x, y, img, type) {
-        this.x = x; this.y = y; this.type = type;
-        if (type === 'auto') { this.width = 150; this.height = 100; }
-        else if (type === 'balla') { this.width = 95; this.height = 95; }
-        else if (type === 'barrera2') { this.width = 110; this.height = 130; }
-        else { this.width = 80; this.height = 120; }
-        this.img = img;
+        this.x = x; this.y = y; this.img = img; this.type = type;
+        const sizes = { auto:[150,100], balla:[95,95], barrera2:[110,130] };
+        [this.w, this.h] = sizes[type] || [80, 120];
     }
-    update(speed) { this.x -= speed; }
-    draw(ctx) { if (this.img.complete) ctx.drawImage(this.img, this.x, this.y, this.width, this.height); }
+    get width()  { return this.w; }
+    get height() { return this.h; }
+    update(spd)  { this.x -= spd; }
+    draw(ctx)    { if (this.img && this.img.complete && this.img.naturalWidth) ctx.drawImage(this.img, this.x, this.y, this.w, this.h); }
 }
 
 class Paloma {
-    constructor(x, y, frames) { this.x = x; this.y = y; this.width = 80; this.height = 70; this.frames = frames; this.currentFrame = 0; this.counter = 0; }
-    update(speed) { this.x -= speed + 2; this.counter++; if (this.counter > 6) { this.currentFrame = (this.currentFrame + 1) % 5; this.counter = 0; } }
-    draw(ctx) { let img = this.frames[this.currentFrame]; if (img && img.complete) ctx.drawImage(img, this.x, this.y, this.width, this.height); }
+    constructor(x, y) {
+        this.x = x; this.y = y; this.w = 80; this.h = 70;
+        this.cf = 0; this.ct = 0;
+        this.frames = [];
+        for (let i = 1; i <= 5; i++) this.frames.push(loadCached(`assets/paloma/paloma${i}.png`));
+    }
+    get width()  { return this.w; }
+    get height() { return this.h; }
+    update(spd)  {
+        this.x -= spd + 2;
+        if (++this.ct > 6) { this.cf = (this.cf + 1) % 5; this.ct = 0; }
+    }
+    draw(ctx) {
+        const img = this.frames[this.cf];
+        if (img && img.complete && img.naturalWidth) ctx.drawImage(img, this.x, this.y, this.w, this.h);
+    }
 }
 
 class Box {
-    constructor(x, y, img) { this.x = x; this.y = y; this.width = 100; this.height = 100; this.img = img; this.health = 45; this.isBeingPushed = false; this.shakeX = 0; }
-    update(speed) { if (this.isBeingPushed) { this.x -= speed * 0.3; this.shakeX = (Math.random()-0.5)*6; } else { this.x -= speed; this.shakeX = 0; } }
-    draw(ctx) { if (this.img.complete) { ctx.drawImage(this.img, this.x + this.shakeX, this.y, this.width, this.height); ctx.fillStyle = "white"; ctx.font = "bold 24px Arial"; ctx.textAlign = "center"; ctx.fillText("3", this.x + this.width/2 + this.shakeX, this.y + 40); } }
+    constructor(x, y, img) {
+        this.x = x; this.y = y; this.img = img;
+        this.w = 100; this.h = 100;
+        this.hp = 45; this.pushed = false; this.shakeX = 0;
+    }
+    get width()  { return this.w; }
+    get height() { return this.h; }
+    update(spd) {
+        if (this.pushed) { this.x -= spd * 0.3; this.shakeX = (Math.random() - 0.5) * 6; }
+        else             { this.x -= spd;        this.shakeX = 0; }
+    }
+    draw(ctx) {
+        if (!this.img || !this.img.complete || !this.img.naturalWidth) return;
+        const dx = this.x + this.shakeX;
+        ctx.drawImage(this.img, dx, this.y, this.w, this.h);
+        // barra de vida
+        const pct = this.hp / 45;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(dx + 5, this.y - 14, this.w - 10, 8);
+        ctx.fillStyle = pct > 0.5 ? '#4cff4c' : '#ff4c4c';
+        ctx.fillRect(dx + 5, this.y - 14, (this.w - 10) * pct, 8);
+    }
 }
 
 class Explosion {
     constructor(x, y) {
-        this.x = x; this.y = y; this.width = 130; this.height = 130; this.frame = 0; this.frameCounter = 0; this.isFinished = false; this.sprites = [];
-        [4, 5].forEach(num => { let img = new Image(); img.src = `assets/explosion/expl${num}.png`; this.sprites.push(img); });
+        this.x = x; this.y = y; this.w = 130; this.h = 130;
+        this.frame = 0; this.ft = 0; this.done = false;
+        this.imgs = [loadCached('assets/explosion/expl4.png'), loadCached('assets/explosion/expl5.png')];
     }
-    update(speed) { this.x -= speed; this.frameCounter++; if (this.frameCounter > 5) { this.frame++; this.frameCounter = 0; } if (this.frame >= 2) this.isFinished = true; }
-    draw(ctx) { let img = this.sprites[this.frame]; if (img && img.complete) ctx.drawImage(img, this.x - 20, this.y - 20, this.width, this.height); }
+    get isFinished() { return this.done; }
+    update(spd) {
+        this.x -= spd;
+        if (++this.ft > 5) { this.frame++; this.ft = 0; }
+        if (this.frame >= 2) this.done = true;
+    }
+    draw(ctx) {
+        const img = this.imgs[this.frame];
+        if (img && img.complete && img.naturalWidth) ctx.drawImage(img, this.x - 20, this.y - 20, this.w, this.h);
+    }
 }
