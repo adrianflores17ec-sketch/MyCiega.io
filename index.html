@@ -1,42 +1,960 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lizeth Tsunami</title>
-    <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Lizeth Tsunami</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #FFD700;
+    --gold2: #FFA500;
+    --pink: #FF6EC7;
+    --dark: #0a0612;
+    --purple: #2d0a4e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: var(--dark);
+    touch-action: none; user-select: none; -webkit-user-select: none;
+    font-family: 'Fredoka One', sans-serif;
+  }
+  canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+
+  /* ── SCREENS ── */
+  .screen {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .screen.active { pointer-events: all; }
+  .screen.hidden { display: none; }
+
+  /* ── MENU ── */
+  #menuScreen {
+    background: linear-gradient(160deg, rgba(10,6,18,0.85) 0%, rgba(45,10,78,0.75) 100%);
+  }
+  .menu-card {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1.5px solid rgba(255,215,0,0.35);
+    border-radius: 32px;
+    padding: 32px 28px 28px;
+    text-align: center;
+    width: min(90vw, 380px);
+    box-shadow: 0 0 60px rgba(255,110,199,0.15), 0 0 120px rgba(255,215,0,0.08);
+    animation: cardIn 0.6s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes cardIn {
+    from { transform: translateY(40px) scale(0.92); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+  }
+  .game-title {
+    font-size: clamp(2rem, 10vw, 3.2rem);
+    color: var(--gold);
+    text-shadow: 0 0 20px rgba(255,215,0,0.6), 0 2px 0 #a07000;
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .game-subtitle {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.85rem;
+    color: var(--pink);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    opacity: 0.9;
+  }
+
+  /* Skin selector */
+  .skin-selector {
+    display: flex; align-items: center; justify-content: center;
+    gap: 14px; margin-bottom: 24px;
+  }
+  .skin-box {
+    display: flex; flex-direction: column; align-items: center;
+    width: 130px;
+  }
+  .skin-img-wrap {
+    width: 110px; height: 110px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.06);
+    border: 2px solid rgba(255,215,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .skin-img-wrap::before {
+    content:''; position:absolute; inset:0;
+    background: radial-gradient(ellipse at 50% 110%, rgba(255,215,0,0.18) 0%, transparent 70%);
+  }
+  #skinPreviewImg {
+    height: 90px;
+    filter: drop-shadow(0 0 10px rgba(255,215,0,0.7));
+    transition: transform 0.18s ease;
+    image-rendering: pixelated;
+  }
+  .skin-name {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.78rem; font-weight: 900;
+    color: var(--gold); margin-top: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .nav-btn {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--gold); border: none; cursor: pointer;
+    font-size: 20px; font-weight: 900; color: #000;
+    box-shadow: 0 4px 15px rgba(255,215,0,0.4);
+    transition: transform 0.1s, box-shadow 0.1s;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+  .nav-btn:active { transform: scale(0.9); box-shadow: 0 2px 8px rgba(255,215,0,0.3); }
+
+  .play-btn {
+    width: 100%; padding: 16px;
+    font-family: 'Fredoka One', sans-serif;
+    font-size: 1.4rem; letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 100%);
+    border: none; border-radius: 50px; cursor: pointer; color: #000;
+    box-shadow: 0 6px 25px rgba(255,215,0,0.45);
+    transition: transform 0.1s, box-shadow 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(255,215,0,0.3); }
+
+  /* ── HUD ── */
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+    display: none;
+    padding: env(safe-area-inset-top, 12px) 14px 0;
+    pointer-events: none;
+  }
+  #hud.active { display: flex; gap: 10px; }
+  .hud-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(8px);
+    border: 1.5px solid rgba(255,215,0,0.4);
+    border-radius: 50px; padding: 6px 14px 6px 8px;
+    color: white; font-family: 'Fredoka One', sans-serif; font-size: 1rem;
+  }
+  .hud-icon { font-size: 1.2rem; line-height: 1; }
+  .hud-val { color: var(--gold); min-width: 28px; }
+
+  /* ── GAME OVER ── */
+  #gameoverScreen {
+    background: linear-gradient(160deg, rgba(10,6,18,0.92) 0%, rgba(60,10,30,0.85) 100%);
+  }
+  .go-card {
+    text-align: center; padding: 36px 32px;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1.5px solid rgba(255,100,150,0.4);
+    border-radius: 32px; width: min(88vw, 360px);
+    box-shadow: 0 0 60px rgba(255,60,100,0.2);
+    animation: cardIn 0.5s cubic-bezier(.22,1,.36,1) both;
+  }
+  .go-title {
+    font-size: clamp(2.2rem, 12vw, 3.5rem);
+    color: #ff4466;
+    text-shadow: 0 0 30px rgba(255,60,100,0.8);
+    margin-bottom: 8px;
+  }
+  .go-score {
+    font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 700;
+    color: rgba(255,255,255,0.7); margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  .go-score span { color: var(--gold); font-size: 1.4rem; }
+  .go-horde {
+    font-family: 'Nunito', sans-serif; font-size: 0.9rem; font-weight: 700;
+    color: rgba(255,255,255,0.55); margin-bottom: 28px;
+  }
+  .go-horde span { color: var(--pink); }
+  .go-btn {
+    width: 100%; padding: 15px;
+    font-family: 'Fredoka One', sans-serif; font-size: 1.3rem; letter-spacing: 1px;
+    background: linear-gradient(135deg, #ff4466 0%, #ff2244 100%);
+    border: none; border-radius: 50px; cursor: pointer; color: #fff;
+    box-shadow: 0 6px 25px rgba(255,40,80,0.45);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .go-btn:active { transform: scale(0.97); }
+
+  /* ── PARTICLES overlay (CSS only, canvas handles game) ── */
+  .tap-hint {
+    position: fixed; bottom: 8vh; left: 50%; transform: translateX(-50%);
+    font-family: 'Nunito', sans-serif; font-weight: 900;
+    font-size: 0.85rem; letter-spacing: 3px; text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    animation: pulse 1.8s ease-in-out infinite;
+    pointer-events: none;
+    display: none;
+  }
+  @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+</style>
 </head>
 <body>
-    <div id="main-menu">
-        <div class="menu-content">
-            <h1>LIZETH TSUNAMI</h1>
-            <div class="character-preview">
-                <button class="nav-btn" id="prev-skin">◀</button>
-                <div class="preview-box">
-                    <img id="skin-img-preview" src="assets/skin1/idle1.png">
-                    <span id="skin-name">LIZETH 1</span>
-                </div>
-                <button class="nav-btn" id="next-skin">▶</button>
-            </div>
-            <button id="start-btn">EMPEZAR PARTIDA</button>
+
+<!-- CANVAS -->
+<canvas id="gameCanvas"></canvas>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-pill">
+    <span class="hud-icon">💰</span>
+    <span>Oro:</span>
+    <span class="hud-val" id="hudGold">0</span>
+  </div>
+  <div class="hud-pill">
+    <span class="hud-icon">👯</span>
+    <span>Lizeths:</span>
+    <span class="hud-val" id="hudLizeths">1</span>
+  </div>
+</div>
+
+<!-- MENU -->
+<div id="menuScreen" class="screen active">
+  <div class="menu-card">
+    <div class="game-title">LIZETH<br>TSUNAMI</div>
+    <div class="game-subtitle">¡Corre mi amor! 💕</div>
+    <div class="skin-selector">
+      <button class="nav-btn" id="prevSkin">◀</button>
+      <div class="skin-box">
+        <div class="skin-img-wrap">
+          <img id="skinPreviewImg" src="assets/skin1/idle1.png" alt="skin">
         </div>
+        <div class="skin-name" id="skinNameLabel">LIZETH 1</div>
+      </div>
+      <button class="nav-btn" id="nextSkin">▶</button>
     </div>
+    <button class="play-btn" id="startBtn">¡EMPEZAR! 🌊</button>
+  </div>
+</div>
 
-    <div id="ui" style="display: none;">
-        <div id="gold-stat" class="stat-box">💰 Oro: <span id="gold-count">0</span></div>
-        <div id="lizeth-stat" class="stat-box">👯 Lizeths: <span id="lizeth-count">1</span></div>
-    </div>
+<!-- GAME OVER -->
+<div id="gameoverScreen" class="screen hidden">
+  <div class="go-card">
+    <div class="go-title">¡FIN!</div>
+    <div class="go-score">Oro recolectado: <span id="goGold">0</span></div>
+    <div class="go-horde">Máximo de Lizeths: <span id="goMaxLizeths">1</span></div>
+    <button class="go-btn" id="restartBtn">VOLVER A INTENTAR 💪</button>
+  </div>
+</div>
 
-    <div id="game-over-screen" style="display: none;">
-        <h1>¡GAME OVER!</h1>
-        <button id="restart-btn">NUEVA PARTIDA</button>
-    </div>
+<div class="tap-hint" id="tapHint">TOCA PARA SALTAR</div>
 
-    <canvas id="game"></canvas>
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  LIZETH TSUNAMI  —  Motor de juego completo
+//  Inspirado en Zombie Tsunami, hecho con ❤️ para Lizeth
+// ═══════════════════════════════════════════════════════════════
 
-    <script src="js/player.js"></script>
-    <script src="js/item.js"></script>
-    <script src="js/input.js"></script>
-    <script src="js/game.js"></script>
+const canvas = document.getElementById('gameCanvas');
+const ctx    = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+// ── Constantes ──────────────────────────────────────────────────
+const GRAVITY       = 0.85;
+const JUMP_FORCE    = -20;
+const JUMP_HOLD_MUL = 1.4;   // multiplicador cuando se suelta el botón
+const BASE_SPEED    = 5.5;
+const GROUND_RATIO  = 0.88;  // posición del suelo respecto al alto
+const DELAY_FRAMES  = 3;     // frames de delay entre miembros de la horda
+const MAX_HORDE     = 80;
+const INTRO_TIME    = 6000;  // ms antes de que aparezcan obstáculos
+
+// ── Utilidades ──────────────────────────────────────────────────
+function rnd(min, max)  { return Math.random() * (max - min) + min; }
+function rndInt(min,max){ return Math.floor(rnd(min, max+1)); }
+function clamp(v,a,b)   { return Math.max(a, Math.min(b, v)); }
+
+// ── Cache de sprites ─────────────────────────────────────────────
+const IMG_CACHE = {};
+function loadImg(src) {
+  if (!IMG_CACHE[src]) { const i = new Image(); i.src = src; IMG_CACHE[src] = i; }
+  return IMG_CACHE[src];
+}
+function loadImgs(srcs) { return srcs.map(loadImg); }
+
+// ── Skins disponibles ────────────────────────────────────────────
+const SKINS = [
+  { id:1, name:'LIZETH 1' },
+  { id:2, name:'LIZETH 2' },
+  { id:3, name:'LIZETH 3' },
+  { id:4, name:'LIZETH 4' },
+  { id:5, name:'MAIRA'    },
+  { id:7, name:'COME RATAS' },
+];
+
+// Precarga todos los sprites de todos los skins
+const SKIN_SPRITES = {};
+function preloadSkin(id) {
+  if (SKIN_SPRITES[id]) return;
+  const base = `assets/skin${id}`;
+  SKIN_SPRITES[id] = {
+    run:  loadImgs([1,2,3,4].map(i => `${base}/run${i}.png`)),
+    jump: loadImgs([1,2].map(i => `${base}/jump${i}.png`)),
+    idle: loadImg(`${base}/idle1.png`)
+  };
+}
+SKINS.forEach(s => preloadSkin(s.id));
+
+// Assets compartidos
+const ASSETS = {
+  bg1:       loadImg('assets/background.png'),
+  bg2:       loadImg('assets/background2.png'),
+  coin:      loadImg('assets/monedas.png'),
+  bread:     loadImg('assets/pan.png'),
+  barrel:    loadImg('assets/barril.png'),
+  balla:     loadImg('assets/balla.png'),
+  auto:      loadImg('assets/auto.png'),
+  barrier:   loadImg('assets/barrera2.png'),
+  box:       loadImg('assets/caja.png'),
+  salchi:    loadImg('assets/salchipapa.png'),
+  paloma:    loadImgs([1,2,3,4,5].map(i=>`assets/paloma/paloma${i}.png`)),
+  expl:      loadImgs([4,5].map(i=>`assets/explosion/expl${i}.png`)),
+};
+
+// ── Audio ────────────────────────────────────────────────────────
+const PLAYLIST = ['assets/musica2.mp3','assets/musica1.mp3','assets/musica3.mp3','assets/musica4.mp3'];
+let bgMusic = null, musicIdx = 0, musicUnlocked = false;
+
+function playBg() {
+  if (bgMusic) { bgMusic.pause(); bgMusic = null; }
+  bgMusic = new Audio(PLAYLIST[musicIdx % PLAYLIST.length]);
+  bgMusic.volume = 0.6;
+  bgMusic.onended = () => { musicIdx++; playBg(); };
+  bgMusic.play().catch(() => {});
+}
+function unlockAudio() {
+  if (musicUnlocked) return;
+  musicUnlocked = true;
+  playBg();
+}
+function sfx(src, vol=0.15) {
+  try { const a = new Audio(src); a.volume = vol; a.play().catch(()=>{}); }
+  catch(e){}
+}
+
+// ── Frases de monedas ────────────────────────────────────────────
+const COIN_FONT = {
+  'T':[[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
+  'E':[[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,0],[1,1,1,1,1]],
+  'A':[[0,1,1,1,0],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1]],
+  'M':[[1,0,0,0,1],[1,1,0,1,1],[1,0,1,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+  'O':[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+  'I':[[0,1,1,1,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,1,1,1,0]],
+  'C':[[0,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[0,1,1,1,1]],
+  'G':[[0,1,1,1,1],[1,0,0,0,0],[1,1,1,1,1],[1,0,0,0,1],[0,1,1,1,1]],
+  'H':[[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1]],
+  'Q':[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,1,1,0],[0,1,1,1,1]],
+  'U':[[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+  'N':[[1,0,0,0,1],[1,1,0,0,1],[1,0,1,0,1],[1,0,0,1,1],[1,0,0,0,1]],
+  'X':[[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0],[0,1,0,1,0],[1,0,0,0,1]],
+  'R':[[1,1,1,1,0],[1,0,0,0,1],[1,1,1,1,0],[1,0,1,0,0],[1,0,0,1,1]],
+  'Ñ':[[1,1,1,0,0],[1,0,0,0,1],[1,1,0,0,1],[1,0,1,0,1],[1,0,0,1,1]],
+  'J':[[0,1,1,1,1],[0,0,0,1,0],[0,0,0,1,0],[1,0,0,1,0],[0,1,1,0,0]],
+  '1':[[0,0,1,0,0],[0,1,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,1,1,1,0]],
+  ':':[[0,0,0,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,1,0,0],[0,0,0,0,0]],
+  ' ':[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+};
+const FRASES = ["TE EXTRAÑO","TE AMO","MI CIEGA","MI CHIQUITA","MI ENOJONA","11:11","TE QUIERO"];
+
+// ── Estado global del juego ───────────────────────────────────────
+let G = {}; // se reinicia en startGame()
+
+function groundY() { return canvas.height * GROUND_RATIO; }
+
+// ─────────────────────────────────────────────────────────────────
+//  CLASE PLAYER
+// ─────────────────────────────────────────────────────────────────
+class Player {
+  constructor(skinId, isLeader=false, startJumping=false) {
+    this.skinId    = skinId;
+    this.isLeader  = isLeader;
+    this.w = 88; this.h = 88;
+    this.x = isLeader ? 130 : -80;
+    this.y = groundY();
+    this.vy        = startJumping ? JUMP_FORCE * 0.8 : 0;
+    this.onGround  = !startJumping;
+    this.jumpHeld  = false;
+    this.dying     = false;
+    this.deadTimer = 0;
+    this.frame     = 0;
+    this.frameTick = 0;
+    this.state     = 'run';        // 'run' | 'jump'
+    // Para followers
+    this.offsetX   = isLeader ? 0 : rnd(-20,20);
+    this.offsetY   = isLeader ? 0 : rnd(-8,8);
+    this.sp        = SKIN_SPRITES[skinId] || SKIN_SPRITES[1];
+  }
+
+  get alive() { return !this.dying; }
+
+  jump() {
+    if (this.dying || !this.onGround) return;
+    this.vy = JUMP_FORCE;
+    this.onGround = false;
+    this.state = 'jump';
+  }
+
+  triggerDeath() {
+    if (this.dying) return;
+    this.dying  = true;
+    this.vy     = -10;
+    this.isLeader = false;
+  }
+
+  updateAsLeader() {
+    if (this.dying) {
+      this.x  -= 7;
+      this.vy += GRAVITY;
+      this.y  += this.vy;
+      this.deadTimer++;
+      return;
+    }
+    // Slide al centro
+    if (this.x < 130) this.x = Math.min(this.x + 4, 130);
+
+    // Gravedad
+    const grav = this.jumpHeld ? GRAVITY : GRAVITY * JUMP_HOLD_MUL;
+    this.vy += grav;
+    this.y  += this.vy;
+
+    const gy = groundY();
+    if (this.y >= gy) {
+      this.y  = gy;
+      this.vy = 0;
+      this.onGround = true;
+      this.state = 'run';
+    } else {
+      this.onGround = false;
+    }
+
+    // Animación de correr
+    if (++this.frameTick >= 6) {
+      this.frame = (this.frame + 1) % 4;
+      this.frameTick = 0;
+    }
+  }
+
+  updateAsFollower(snapshot, idx) {
+    if (this.dying) {
+      this.x  -= 7;
+      this.vy += GRAVITY;
+      this.y  += this.vy;
+      this.deadTimer++;
+      return;
+    }
+    if (!snapshot) return;
+    this.y      = snapshot.y + this.offsetY;
+    this.state  = snapshot.state;
+    this.frame  = snapshot.frame;
+    this.vy     = snapshot.vy;
+    this.onGround = snapshot.onGround;
+    const tx = snapshot.x - idx * 22 + this.offsetX;
+    this.x  += (tx - this.x) * 0.3;
+  }
+
+  draw() {
+    const sp = this.sp;
+    let img;
+    if (this.state === 'jump') {
+      img = sp.jump[this.vy < 0 ? 0 : 1];
+    } else {
+      img = sp.run[this.frame % 4];
+    }
+    if (!img || !img.complete) return;
+    ctx.save();
+    if (this.dying) ctx.globalAlpha = 0.45;
+    ctx.drawImage(img, Math.round(this.x), Math.round(this.y), this.w, this.h);
+    ctx.restore();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  CLASES DE OBJETOS
+// ─────────────────────────────────────────────────────────────────
+class GameObject {
+  constructor(x, y, w, h, img) {
+    this.x=x; this.y=y; this.w=w; this.h=h; this.img=img;
+    this.alive = true;
+  }
+  update(speed) { this.x -= speed; if (this.x < -300) this.alive = false; }
+  draw() {
+    if (!this.img || !this.img.complete) return;
+    ctx.drawImage(this.img, Math.round(this.x), Math.round(this.y), this.w, this.h);
+  }
+  hits(p, margin=30) {
+    return p.x+margin < this.x+this.w &&
+           p.x+p.w-margin > this.x   &&
+           p.y+margin < this.y+this.h &&
+           p.y+p.h-margin > this.y;
+  }
+}
+
+class Coin extends GameObject {
+  constructor(x,y){ super(x,y,40,40,ASSETS.coin); }
+  hits(p){ return super.hits(p,-10); }
+}
+class Bread extends GameObject {
+  constructor(x,y){ super(x,y,70,70,ASSETS.bread); }
+}
+class Salchi extends GameObject {
+  constructor(x,y){ super(x,y,110,110,ASSETS.salchi); }
+}
+class Barrel extends GameObject {
+  constructor(x,y){ super(x,y,80,115,ASSETS.barrel); }
+}
+class Balla extends GameObject {
+  constructor(x,y){ super(x,y,105,105,ASSETS.balla); }
+}
+class Barrier extends GameObject {
+  constructor(x,y){ super(x,y,115,125,ASSETS.barrier); }
+}
+class AutoObj extends GameObject {
+  constructor(x,y){ super(x,y,145,95,ASSETS.auto); }
+  update(speed){ this.x -= speed + 2; if (this.x < -400) this.alive=false; }
+}
+class PalomaObj {
+  constructor(x,y){
+    this.x=x; this.y=y; this.w=80; this.h=65;
+    this.frame=0; this.tick=0; this.alive=true;
+  }
+  update(speed){
+    this.x -= speed + 2;
+    if (++this.tick >= 6) { this.frame=(this.frame+1)%5; this.tick=0; }
+    if (this.x < -200) this.alive=false;
+  }
+  draw(){
+    const img = ASSETS.paloma[this.frame];
+    if (!img||!img.complete) return;
+    ctx.drawImage(img,Math.round(this.x),Math.round(this.y),this.w,this.h);
+  }
+  hits(p,m=20){ return p.x+m<this.x+this.w&&p.x+p.w-m>this.x&&p.y+m<this.y+this.h&&p.y+p.h-m>this.y; }
+}
+
+class BoxObj {
+  constructor(x,y){
+    this.x=x; this.y=y; this.w=95; this.h=95;
+    this.hp=30; this.alive=true; this.pushed=false; this.shake=0;
+  }
+  update(speed){
+    if (this.pushed) { this.x -= speed*0.25; this.shake=(Math.random()-0.5)*5; }
+    else { this.x -= speed; this.shake=0; }
+    if (this.x < -300) this.alive=false;
+  }
+  draw(){
+    if (!ASSETS.box.complete) return;
+    const sx = Math.round(this.x+this.shake);
+    ctx.drawImage(ASSETS.box,sx,Math.round(this.y),this.w,this.h);
+    // Barra de vida
+    const pct = this.hp/30;
+    ctx.fillStyle='rgba(0,0,0,0.5)';
+    ctx.fillRect(sx+5,Math.round(this.y)-10,this.w-10,6);
+    ctx.fillStyle=`hsl(${pct*120},80%,50%)`;
+    ctx.fillRect(sx+5,Math.round(this.y)-10,(this.w-10)*pct,6);
+  }
+  hits(p,m=10){ return p.x+m<this.x+this.w&&p.x+p.w-m>this.x&&p.y+m<this.y+this.h&&p.y+p.h-m>this.y; }
+}
+
+class Explosion {
+  constructor(x,y){
+    this.x=x; this.y=y; this.w=130; this.h=130;
+    this.frame=0; this.tick=0; this.alive=true;
+  }
+  update(speed){ this.x-=speed; if(++this.tick>5){this.frame++;this.tick=0;} if(this.frame>=2)this.alive=false; }
+  draw(){
+    const img=ASSETS.expl[this.frame];
+    if (!img||!img.complete) return;
+    ctx.drawImage(img,Math.round(this.x-20),Math.round(this.y-20),this.w,this.h);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  LÓGICA DE SPAWN
+// ─────────────────────────────────────────────────────────────────
+function spawnCoins(frase, startX, cy) {
+  const COIN_GAP=22, CHAR_GAP=38;
+  let cx=startX;
+  for (const ch of frase.toUpperCase()) {
+    const matrix = COIN_FONT[ch] || COIN_FONT[' '];
+    for (let r=0;r<5;r++) for (let c=0;c<5;c++) {
+      if (matrix[r][c]) G.coins.push(new Coin(cx+c*COIN_GAP, cy-220+r*COIN_GAP));
+    }
+    cx += 5*COIN_GAP + CHAR_GAP;
+  }
+  return cx + 200;
+}
+
+function spawnPattern() {
+  if (G.introActive) return;
+  const gy  = groundY();
+  const ax  = canvas.width + 120;
+  const alive = G.horde.filter(p=>!p.dying).length;
+  const kill  = alive > 12;
+  const r     = Math.random();
+
+  if (!kill && r < 0.014) {
+    // Salchipapa — bonus grande
+    G.pickups.push(new Salchi(ax, gy - 105));
+    G.lastSpawnX = ax + 180;
+    return;
+  }
+  if (r < (kill ? 0.80 : 0.42)) {
+    // Obstáculo
+    const t = Math.random();
+    if      (t < 0.20) G.obstacles.push(new PalomaObj(ax, gy-120));
+    else if (t < 0.38) G.obstacles.push(new Balla(ax, gy-100));
+    else if (t < 0.56) G.obstacles.push(new Barrier(ax, gy-120));
+    else if (t < 0.74) G.obstacles.push(new Barrel(ax, gy-110));
+    else if (t < 0.88) G.obstacles.push(new AutoObj(ax, gy-90));
+    else               G.boxes.push(new BoxObj(ax, gy-90));
+    G.lastSpawnX = ax + (kill ? 270 : 420);
+  } else {
+    const t = Math.random();
+    if (t < (kill ? 0.08 : 0.45)) {
+      // Pan
+      G.pickups.push(new Bread(ax, gy-130));
+      G.lastSpawnX = ax + 180;
+    } else {
+      // Monedas en arco
+      for (let i=0;i<7;i++) {
+        G.coins.push(new Coin(ax+i*65, (gy+10) - Math.sin((i/6)*Math.PI)*160));
+      }
+      G.lastSpawnX = ax + 520;
+    }
+  }
+}
+
+function addToHorde(skinId=null, jumping=false) {
+  if (G.horde.filter(p=>!p.dying).length >= MAX_HORDE) return;
+  const id = skinId || (G.nextSkin%4)+1;
+  G.horde.push(new Player(id, false, jumping));
+  if (!skinId) G.nextSkin++;
+  sfx('assets/pan.mp3', 0.2);
+  updateHUD();
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  FONDO (parallax 2 capas)
+// ─────────────────────────────────────────────────────────────────
+function drawBg(speed) {
+  const bg1=ASSETS.bg1, bg2=ASSETS.bg2;
+  if (!bg1.complete || !bg2.complete) {
+    ctx.fillStyle='#1a0a2e'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    return;
+  }
+  const sc   = canvas.height / bg1.naturalHeight;
+  const w1   = bg1.naturalWidth * sc;
+  const w2   = bg2.naturalWidth * sc;
+  const loop = w1 + w2;
+  G.bgX = ((G.bgX - speed) % loop + loop) % loop;
+
+  let cx = -G.bgX;
+  while (cx < canvas.width) {
+    ctx.drawImage(bg1, cx, 0, w1, canvas.height);
+    cx += w1;
+    ctx.drawImage(bg2, cx, 0, w2, canvas.height);
+    cx += w2;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  ESTADO DEL JUEGO
+// ─────────────────────────────────────────────────────────────────
+function startGame(skinId) {
+  G = {
+    running:     true,
+    skinId,
+    horde:       [new Player(skinId, true)],
+    coins:       [],
+    pickups:     [],
+    obstacles:   [],
+    boxes:       [],
+    explosions:  [],
+    buf:         [],            // action buffer para followers
+    gold:        0,
+    maxHorde:    1,
+    bgX:         0,
+    speed:       BASE_SPEED,
+    spawnTick:   0,
+    lastSpawnX:  canvas.width + 500,
+    startTime:   performance.now(),
+    introActive: true,
+    nextSkin:    1,
+    raf:         null,
+  };
+
+  // Mostrar HUD
+  document.getElementById('hud').classList.add('active');
+  document.getElementById('tapHint').style.display = 'block';
+  showScreen(null);
+  updateHUD();
+
+  // Primera frase de monedas
+  spawnCoins(FRASES[rndInt(0,FRASES.length-1)], canvas.width+100, groundY());
+
+  if (G.raf) cancelAnimationFrame(G.raf);
+  G.raf = requestAnimationFrame(loop);
+}
+
+function endGame() {
+  G.running = false;
+  if (G.raf) cancelAnimationFrame(G.raf);
+  document.getElementById('hud').classList.remove('active');
+  document.getElementById('tapHint').style.display = 'none';
+  document.getElementById('goGold').textContent      = G.gold;
+  document.getElementById('goMaxLizeths').textContent = G.maxHorde;
+  showScreen('gameoverScreen');
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  GAME LOOP PRINCIPAL
+// ─────────────────────────────────────────────────────────────────
+function loop(now) {
+  if (!G.running) return;
+
+  const elapsed = now - G.startTime;
+  if (elapsed > INTRO_TIME) G.introActive = false;
+
+  // Velocidad dinámica
+  const t = elapsed / 1000;
+  G.speed = BASE_SPEED + Math.min(t * 0.08, 4.5);
+  const alive = G.horde.filter(p => !p.dying);
+  if (alive.length > 12) G.speed = Math.min(G.speed + 3, 15);
+
+  // ── Dibuja fondo
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBg(G.speed);
+
+  // ── Horda
+  if (alive.length === 0 && G.horde.every(p=>p.deadTimer>60)) {
+    endGame(); return;
+  }
+
+  const leader = alive[0];
+  if (leader) {
+    leader.isLeader = true;
+    leader.updateAsLeader();
+    G.buf.push({ x:leader.x, y:leader.y, vy:leader.vy, state:leader.state, frame:leader.frame, onGround:leader.onGround });
+    if (G.buf.length > 2000) G.buf.shift();
+
+    for (let i=1; i<alive.length; i++) {
+      const snap = G.buf[G.buf.length - 1 - i*DELAY_FRAMES] || G.buf[0];
+      alive[i].isLeader = false;
+      alive[i].updateAsFollower(snap, i);
+    }
+  }
+
+  // Limpiar muertos antiguos
+  for (let i=G.horde.length-1; i>=0; i--) {
+    const p = G.horde[i];
+    if (p.dying) {
+      if (!p.isLeader) p.updateAsFollower(null, i); // para que caiga
+      p.vy += GRAVITY; p.y += p.vy; p.x -= 7; p.deadTimer++;
+      if (p.deadTimer > 120 || p.x < -200) G.horde.splice(i,1);
+    }
+  }
+
+  // ── Spawn
+  G.lastSpawnX -= G.speed;
+  if (++G.spawnTick >= (alive.length>12 ? 18:32) && G.lastSpawnX < canvas.width*0.55) {
+    spawnPattern();
+    G.spawnTick = 0;
+  }
+
+  // ── Boxes
+  for (let i=G.boxes.length-1; i>=0; i--) {
+    const b = G.boxes[i];
+    b.update(G.speed);
+    if (!b.alive) { G.boxes.splice(i,1); continue; }
+    b.draw();
+    let pushing = false;
+    for (const p of alive) {
+      if (b.hits(p,10) && p.y+p.h > b.y+15) {
+        pushing = true;
+        p.x = b.x - p.w + 8;
+      }
+    }
+    b.pushed = pushing && alive.length >= 3;
+    if (b.pushed) {
+      b.hp -= 3.5;
+      if (b.hp <= 0) {
+        G.explosions.push(new Explosion(b.x, b.y));
+        sfx('assets/explosion.mp3',0.3);
+        G.boxes.splice(i,1);
+        addToHorde(5, true);
+      }
+    }
+  }
+
+  // ── Obstacles
+  for (let i=G.obstacles.length-1; i>=0; i--) {
+    const ob = G.obstacles[i];
+    ob.update(G.speed);
+    if (!ob.alive) { G.obstacles.splice(i,1); continue; }
+    ob.draw();
+    for (const p of alive) {
+      if (ob.hits(p, ob instanceof PalomaObj ? 18:28)) {
+        G.explosions.push(new Explosion(ob.x, ob.y));
+        sfx('assets/explosion.mp3',0.25);
+        G.obstacles.splice(i,1);
+        p.triggerDeath();
+        updateHUD();
+        break;
+      }
+    }
+  }
+
+  // ── Explosions
+  for (let i=G.explosions.length-1; i>=0; i--) {
+    const ex=G.explosions[i]; ex.update(G.speed); ex.draw();
+    if (!ex.alive) G.explosions.splice(i,1);
+  }
+
+  // ── Pickups (pan, salchi)
+  for (let i=G.pickups.length-1; i>=0; i--) {
+    const pk=G.pickups[i]; pk.update(G.speed);
+    if (!pk.alive) { G.pickups.splice(i,1); continue; }
+    pk.draw();
+    for (const p of alive) {
+      if (pk.hits(p,20)) {
+        G.pickups.splice(i,1);
+        if (pk instanceof Bread)  addToHorde(null,true);
+        if (pk instanceof Salchi) { addToHorde(5,true); addToHorde(7,true); }
+        break;
+      }
+    }
+  }
+
+  // ── Coins
+  for (let i=G.coins.length-1; i>=0; i--) {
+    const c=G.coins[i]; c.update(G.speed);
+    if (!c.alive) { G.coins.splice(i,1); continue; }
+    c.draw();
+    for (const p of alive) {
+      if (c.hits(p)) {
+        G.coins.splice(i,1);
+        G.gold++;
+        document.getElementById('hudGold').textContent = G.gold;
+        sfx('assets/moneda.mp3', 0.08);
+        break;
+      }
+    }
+  }
+
+  // ── Dibuja horda (sorted por Y para profundidad)
+  const sorted = [...G.horde].sort((a,b)=>(a.y+a.offsetY)-(b.y+b.offsetY));
+  for (const p of sorted) p.draw();
+
+  // ── Max horde tracking
+  const aliveNow = G.horde.filter(p=>!p.dying).length;
+  if (aliveNow > G.maxHorde) G.maxHorde = aliveNow;
+
+  G.raf = requestAnimationFrame(loop);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  INPUT
+// ─────────────────────────────────────────────────────────────────
+function doJump() {
+  if (!G.running) return;
+  unlockAudio();
+  const alive = G.horde.filter(p=>!p.dying);
+  if (alive[0]) alive[0].jump();
+}
+function setHeld(v) {
+  if (!G.horde) return;
+  G.horde.forEach(p => p.jumpHeld = v);
+}
+
+canvas.addEventListener('pointerdown', e => { e.preventDefault(); doJump(); setHeld(true); });
+canvas.addEventListener('pointerup',   e => { e.preventDefault(); setHeld(false); });
+window.addEventListener('keydown', e => {
+  if ([' ','ArrowUp','w','ArrowDown','s'].includes(e.key)) { e.preventDefault(); doJump(); setHeld(true); }
+});
+window.addEventListener('keyup', e => {
+  if ([' ','ArrowUp','w','ArrowDown','s'].includes(e.key)) setHeld(false);
+});
+window.addEventListener('contextmenu', e => e.preventDefault());
+
+// ─────────────────────────────────────────────────────────────────
+//  UI / SCREENS
+// ─────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  ['menuScreen','gameoverScreen'].forEach(s => {
+    const el = document.getElementById(s);
+    if (s===id) { el.classList.remove('hidden'); el.classList.add('active'); }
+    else        { el.classList.add('hidden');    el.classList.remove('active'); }
+  });
+}
+
+function updateHUD() {
+  const alive = G.horde ? G.horde.filter(p=>!p.dying).length : 1;
+  document.getElementById('hudLizeths').textContent = alive;
+}
+
+// Selector de skin
+let skinIdx = 0;
+function updateSkinPreview() {
+  const s = SKINS[skinIdx];
+  document.getElementById('skinPreviewImg').src = `assets/skin${s.id}/idle1.png`;
+  document.getElementById('skinNameLabel').textContent = s.name;
+  sfx('assets/moneda.mp3',0.1);
+}
+document.getElementById('prevSkin').onclick = () => { skinIdx=(skinIdx-1+SKINS.length)%SKINS.length; updateSkinPreview(); };
+document.getElementById('nextSkin').onclick = () => { skinIdx=(skinIdx+1)%SKINS.length; updateSkinPreview(); };
+
+document.getElementById('startBtn').onclick = () => {
+  unlockAudio();
+  startGame(SKINS[skinIdx].id);
+};
+document.getElementById('restartBtn').onclick = () => {
+  unlockAudio();
+  startGame(SKINS[skinIdx].id);
+};
+
+// ─────────────────────────────────────────────────────────────────
+//  RESIZE
+// ─────────────────────────────────────────────────────────────────
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  ctx.imageSmoothingEnabled = false;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ── Fondo animado en el menú ─────────────────────────────────────
+let menuBgX = 0;
+function menuLoop() {
+  if (G.running) return; // Si hay juego activo, no pintar sobre él
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const bg=ASSETS.bg1;
+  if (bg.complete && bg.naturalWidth>0) {
+    const sc=canvas.height/bg.naturalHeight, bw=bg.naturalWidth*sc;
+    menuBgX = ((menuBgX-0.8)%bw+bw)%bw;
+    ctx.globalAlpha=0.35;
+    for(let cx=-menuBgX; cx<canvas.width; cx+=bw) ctx.drawImage(bg,cx,0,bw,canvas.height);
+    ctx.globalAlpha=1;
+  }
+  if (!G.running) requestAnimationFrame(menuLoop);
+}
+
+// Inicializa estado mínimo para que no explote si se accede a G antes del juego
+G = { running: false };
+showScreen('menuScreen');
+menuLoop();
+</script>
 </body>
 </html>
