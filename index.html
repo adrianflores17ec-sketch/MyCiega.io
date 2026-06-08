@@ -20,6 +20,24 @@ html,body{
   -webkit-tap-highlight-color:transparent;
 }
 
+/* ═══ CONSOLA DE ERRORES PARA MÓVIL ═══ */
+#error-log {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: rgba(220, 20, 60, 0.95);
+  color: #fff;
+  font-family: monospace;
+  font-size: 14px;
+  padding: 15px;
+  z-index: 99999;
+  display: none;
+  border-bottom: 3px solid #fff;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+  max-height: 40vh;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
 /* ═══ CANVAS BASE ═══ */
 #c{
   position:fixed;
@@ -72,7 +90,6 @@ html,body{
   background:linear-gradient(175deg,rgba(8,2,20,0.93) 0%,rgba(30,8,60,0.88) 100%);
 }
 
-/* Estrellas de fondo (puro CSS) */
 #mnu::before{
   content:'';
   position:absolute;inset:0;
@@ -115,7 +132,6 @@ html,body{
   to{transform:none;opacity:1}
 }
 
-/* Título del juego */
 .gtitle{
   font-family:'Bangers',cursive;
   font-size:clamp(2.8rem,14vw,4.5rem);
@@ -146,7 +162,6 @@ html,body{
   opacity:.9;
 }
 
-/* Selector de personaje */
 .char-sel{
   display:flex;align-items:center;
   gap:clamp(8px,3vw,16px);
@@ -204,7 +219,6 @@ html,body{
   text-shadow:0 1px 6px rgba(255,215,0,.4);
 }
 
-/* Botón de jugar */
 .play-btn{
   width:100%;
   padding:clamp(13px,3.5vw,18px) 20px;
@@ -219,7 +233,6 @@ html,body{
 }
 .play-btn:active{transform:scale(.96) translateY(2px);box-shadow:0 2px 12px rgba(255,165,0,.3)}
 
-/* Indicador de records */
 .best-row{
   display:flex;gap:16px;margin-top:clamp(10px,3vw,16px);
   opacity:.7;
@@ -309,7 +322,6 @@ html,body{
   box-shadow:none;
 }
 
-/* ── COMBO/TOAST flotante ── */
 #toast{
   position:fixed;
   top:50%;left:50%;
@@ -322,21 +334,20 @@ html,body{
   text-shadow:0 0 20px rgba(255,215,0,.8),2px 2px 0 #7a5000;
   pointer-events:none;
   opacity:0;
-  transition:none;
 }
 </style>
 </head>
 <body>
 
+<div id="error-log"></div>
+
 <canvas id="c"></canvas>
 
-<!-- HUD en juego -->
 <div id="hud">
   <div class="hpill"><span class="ico">💰</span><span>ORO</span><span class="val" id="hGold">0</span></div>
   <div class="hpill"><span class="ico">👯</span><span>HORDA</span><span class="val" id="hCount">1</span></div>
 </div>
 
-<!-- MENÚ PRINCIPAL -->
 <div id="mnu" class="ovl">
   <div class="menu-inner">
     <div class="gtitle">LIZETH<br>TSUNAMI</div>
@@ -362,7 +373,6 @@ html,body{
   </div>
 </div>
 
-<!-- GAME OVER -->
 <div id="gover" class="ovl gone">
   <div class="go-inner">
     <div class="go-title">GAME<br>OVER</div>
@@ -376,14 +386,25 @@ html,body{
   </div>
 </div>
 
-<!-- Toast para combos -->
 <div id="toast"></div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-//  LIZETH TSUNAMI  — Motor completo, rehecho profesional
-//  Fiel a Zombie Tsunami: horda, seguidores con delay, items, obstáculos
+//  SISTEMA COLECTOR DE ERRORES (MÓVIL SIN PC)
 // ═══════════════════════════════════════════════════════════════════════════
+function showError(msg) {
+  const el = document.getElementById('error-log');
+  if(el) {
+    el.style.display = 'block';
+    el.innerHTML += "⚠️ " + msg + "<br>";
+  }
+}
+
+window.onerror = function(message, source, lineno, colno, error) {
+  let cleanSource = source ? source.split('/').pop() : 'script';
+  showError(`Error: "${message}" en archivo [${cleanSource}] línea ${lineno}`);
+  return false;
+};
 
 /* ─── CANVAS ─── */
 const CV  = document.getElementById('c');
@@ -401,19 +422,27 @@ resize();
 const GRAVITY       = 0.88;
 const JUMP_FORCE    = -21;
 const BASE_SPEED    = 5.5;
-const GROUND_RATIO  = 0.88;   // fracción de la pantalla donde está el suelo
+const GROUND_RATIO  = 0.88;
 const PLAYER_W      = 90;
 const PLAYER_H      = 90;
-const LEADER_X      = 140;    // posición X fija del líder
-const BUF_DELAY     = 3;      // frames de delay entre miembros de la horda
-const INTRO_MS      = 7000;   // tiempo sin obstáculos al inicio
+const LEADER_X      = 140;
+const BUF_DELAY     = 3;
+const INTRO_MS      = 7000;
 const MAX_HORDE     = 80;
 
-function GY(){ return CV.height * GROUND_RATIO; }  // posición Y del suelo
+function GY(){ return CV.height * GROUND_RATIO; }
 
-/* ─── CACHÉ DE IMÁGENES ─── */
+/* ─── CACHÉ DE IMÁGENES PROTEGIDO ─── */
 const _IMG = {};
-function img(src){ if(!_IMG[src]){const i=new Image();i.src=src;_IMG[src]=i;} return _IMG[src]; }
+function img(src){ 
+  if(!_IMG[src]){
+    const i = new Image();
+    i.onerror = () => showError(`¡Falta archivo o ruta rota!: "${src}"`);
+    i.src = src;
+    _IMG[src] = i;
+  } 
+  return _IMG[src]; 
+}
 function imgs(list){ return list.map(img); }
 
 /* ─── SKINS ─── */
@@ -425,7 +454,7 @@ const SKINS = [
   {id:5,name:'MAIRA'},
   {id:7,name:'COME RATAS'},
 ];
-const SK = {};   // cache de sprites por skin id
+const SK = {};
 function loadSkin(id){
   if(SK[id]) return;
   const b=`assets/skin${id}`;
@@ -476,27 +505,26 @@ const FONT5={
 };
 const FRASES=['TE EXTRAÑO','TE AMO','MI CIEGA','MI CHIQUITA','MI ENOJONA','11:11','TE QUIERO'];
 
-/* ─── AUDIO ─── */
+/* ─── AUDIO PROTEGIDO ─── */
 const PLAYLIST=['assets/musica2.mp3','assets/musica1.mp3','assets/musica3.mp3','assets/musica4.mp3'];
 let bgMusic=null, musicIdx=0, musicOn=false;
 
 function playMusic(){
-  if(bgMusic){bgMusic.pause();bgMusic=null;}
-  bgMusic=new Audio(PLAYLIST[musicIdx%PLAYLIST.length]);
-  bgMusic.volume=0.6;
-  bgMusic.onended=()=>{musicIdx++;playMusic();};
-  bgMusic.play().catch(()=>{});
-  musicOn=true;
+  try {
+    if(bgMusic){bgMusic.pause();bgMusic=null;}
+    bgMusic=new Audio(PLAYLIST[musicIdx%PLAYLIST.length]);
+    bgMusic.volume=0.6;
+    bgMusic.onended=()=>{musicIdx++;playMusic();};
+    bgMusic.play().catch(()=>{});
+    musicOn=true;
+  } catch(e){}
 }
-function unlockMusic(){
-  if(musicOn) return;
-  playMusic();
-}
+function unlockMusic(){ if(!musicOn) playMusic(); }
 function sfx(src,vol=0.15){
   try{const a=new Audio(src);a.volume=vol;a.play().catch(()=>{});}catch(e){}
 }
 
-/* ─── PERSISTENCIA (record) ─── */
+/* ─── PERSISTENCIA ─── */
 function getBest(){ try{return JSON.parse(localStorage.getItem('lz_best')||'{"gold":0,"horde":0}');}catch{return{gold:0,horde:0};} }
 function saveBest(gold,horde){
   const b=getBest();
@@ -510,13 +538,9 @@ function refreshBestUI(){
   document.getElementById('bestHorde').textContent=b.horde;
 }
 
-/* ─── ESTADO GLOBAL ─── */
-let G=null;   // se asigna en startGame()
+let G=null;
 
-/* ═══════════════════════════════════════════════════════════════
-   CLASE PLAYER
-   ─ Lidera la horda o sigue al líder con delay en el action buffer
-═══════════════════════════════════════════════════════════════ */
+/* ─── CLASE PLAYER ─── */
 class Player {
   constructor(skinId, isLeader=false, launchJump=false){
     this.skinId   = skinId;
@@ -527,13 +551,12 @@ class Player {
     this.y = GY();
     this.vy       = launchJump ? JUMP_FORCE * 0.85 : 0;
     this.onGround = !launchJump;
-    this.held     = false;    // ¿botón de salto presionado?
+    this.held     = false;
     this.dying    = false;
     this.dTimer   = 0;
     this.frame    = 0;
     this.ftick    = 0;
-    this.state    = 'run';   // 'run' | 'jump'
-    // Pequeña variación visual para seguidores
+    this.state    = 'run';
     this.oxF = isLeader ? 0 : (Math.random()*40-20);
     this.oyF = isLeader ? 0 : (Math.random()*10-5);
   }
@@ -554,14 +577,10 @@ class Player {
     this.vy       = -10;
   }
 
-  /* Actualiza lider — física propia */
   tickLeader(){
     if(this.dying){ this._tickDead(); return; }
-
-    // Slide al puesto del líder
     if(this.x < LEADER_X) this.x = Math.min(this.x+4, LEADER_X);
 
-    // Gravedad: suelta rápido = salto más corto (variable jump height)
     const grav = (!this.held && this.vy<0) ? GRAVITY*2.2 : GRAVITY;
     this.vy += grav;
     this.y  += this.vy;
@@ -575,23 +594,19 @@ class Player {
     } else {
       this.onGround = false;
     }
-
-    // Animación frames de correr
     if(++this.ftick >= 6){ this.frame=(this.frame+1)%4; this.ftick=0; }
   }
 
-  /* Actualiza seguidor — replica snapshot del líder con delay */
   tickFollower(snap, idx){
     if(this.dying){ this._tickDead(); return; }
     if(!snap) return;
-    this.y      = snap.y  + this.oyF;
-    this.state  = snap.state;
-    this.frame  = snap.frame;
-    this.vy     = snap.vy;
+    this.y        = snap.y  + this.oyF;
+    this.state    = snap.state;
+    this.frame    = snap.frame;
+    this.vy       = snap.vy;
     this.onGround = snap.onGround;
-    // Lerp suave hacia la posición objetivo
-    const tx = snap.x - idx * 22 + this.oxF;
-    this.x += (tx - this.x) * 0.32;
+    const tx      = snap.x - idx * 22 + this.oxF;
+    this.x       += (tx - this.x) * 0.32;
   }
 
   _tickDead(){
@@ -603,13 +618,12 @@ class Player {
 
   draw(){
     const sp = SK[this.skinId] || SK[1];
-    let i;
-    if(this.state==='jump'){
-      i = sp.jump[this.vy < 0 ? 0 : 1];
-    } else {
-      i = sp.run[this.frame % 4];
-    }
-    if(!i || !i.complete) return;
+    if(!sp) return;
+    let i = this.state==='jump' ? sp.jump[this.vy < 0 ? 0 : 1] : sp.run[this.frame % 4];
+    
+    // FILTRO DE SEGURIDAD: Evita dibujar si la imagen se rompió o no cargó
+    if(!i || !i.complete || i.naturalWidth === 0) return;
+
     CTX.save();
     if(this.dying) CTX.globalAlpha = 0.4;
     CTX.drawImage(i, Math.round(this.x), Math.round(this.y), this.w, this.h);
@@ -617,79 +631,52 @@ class Player {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   OBJETOS DEL MUNDO
-═══════════════════════════════════════════════════════════════ */
-class GO {  // Game Object base
+/* ─── CLASES DE OBJETOS CON FILTRO DE SEGURIDAD EN DRAW ─── */
+class GO {
   constructor(x,y,w,h,sprite){
-    this.x=x; this.y=y; this.w=w; this.h=h;
-    this.sprite=sprite; this.dead=false;
+    this.x=x; this.y=y; this.w=w; this.h=h; this.sprite=sprite; this.dead=false;
   }
   tick(spd){ this.x-=spd; if(this.x < -400) this.dead=true; }
   draw(){
-    if(!this.sprite||!this.sprite.complete) return;
+    if(!this.sprite || !this.sprite.complete || this.sprite.naturalWidth === 0) return;
     CTX.drawImage(this.sprite, Math.round(this.x), Math.round(this.y), this.w, this.h);
   }
   hits(p, margin){
     const m=margin??28;
-    return p.x+m   < this.x+this.w
-        && p.x+p.w-m > this.x
-        && p.y+m   < this.y+this.h
-        && p.y+p.h-m > this.y;
+    return p.x+m < this.x+this.w && p.x+p.w-m > this.x && p.y+m < this.y+this.h && p.y+p.h-m > this.y;
   }
 }
 
-class Coin extends GO {
-  constructor(x,y){ super(x,y,38,38,A.coin); }
-  hits(p){ return super.hits(p,-12); }
-}
+class Coin extends GO { constructor(x,y){ super(x,y,38,38,A.coin); } hits(p){ return super.hits(p,-12); } }
 class Bread  extends GO { constructor(x,y){ super(x,y,68,68,A.bread); } }
 class Salchi extends GO { constructor(x,y){ super(x,y,105,105,A.salchi); } }
-
 class Barrel  extends GO { constructor(x,y){ super(x,y,78,112,A.barrel); } }
-class Balla   extends GO {
-  constructor(x,y){ super(x,y,105,105,A.balla); }
-  tick(spd){ this.x-=spd+1.5; if(this.x<-400) this.dead=true; }
-}
+class Balla   extends GO { constructor(x,y){ super(x,y,105,105,A.balla); } tick(spd){ this.x-=spd+1.5; if(this.x<-400) this.dead=true; } }
 class Barrier extends GO { constructor(x,y){ super(x,y,112,122,A.barrier); } }
-class CarObj  extends GO {
-  constructor(x,y){ super(x,y,145,92,A.auto); }
-  tick(spd){ this.x-=spd+2.5; if(this.x<-400) this.dead=true; }
-}
+class CarObj  extends GO { constructor(x,y){ super(x,y,145,92,A.auto); } tick(spd){ this.x-=spd+2.5; if(this.x<-400) this.dead=true; } }
 
 class PalomaObj {
-  constructor(x,y){
-    this.x=x; this.y=y; this.w=78; this.h=62;
-    this.f=0; this.ft=0; this.dead=false;
-  }
-  tick(spd){
-    this.x-=spd+2;
-    if(++this.ft>=6){this.f=(this.f+1)%5;this.ft=0;}
-    if(this.x<-200) this.dead=true;
-  }
+  constructor(x,y){ this.x=x; this.y=y; this.w=78; this.h=62; this.f=0; this.ft=0; this.dead=false; }
+  tick(spd){ this.x-=spd+2; if(++this.ft>=6){this.f=(this.f+1)%5;this.ft=0;} if(this.x<-200) this.dead=true; }
   draw(){
     const i=A.paloma[this.f];
-    if(!i||!i.complete) return;
+    if(!i || !i.complete || i.naturalWidth === 0) return;
     CTX.drawImage(i,Math.round(this.x),Math.round(this.y),this.w,this.h);
   }
   hits(p){ const m=16; return p.x+m<this.x+this.w&&p.x+p.w-m>this.x&&p.y+m<this.y+this.h&&p.y+p.h-m>this.y; }
 }
 
 class BoxObj {
-  constructor(x,y){
-    this.x=x; this.y=y; this.w=95; this.h=95;
-    this.hp=30; this.dead=false; this.pushed=false; this.shake=0;
-  }
+  constructor(x,y){ this.x=x; this.y=y; this.w=95; this.h=95; this.hp=30; this.dead=false; this.pushed=false; this.shake=0; }
   tick(spd){
     if(this.pushed){ this.x-=spd*0.22; this.shake=(Math.random()-.5)*5; }
     else { this.x-=spd; this.shake=0; }
     if(this.x<-400) this.dead=true;
   }
   draw(){
-    if(!A.box.complete) return;
+    if(!A.box || !A.box.complete || A.box.naturalWidth === 0) return;
     const sx=Math.round(this.x+this.shake), sy=Math.round(this.y);
     CTX.drawImage(A.box,sx,sy,this.w,this.h);
-    // Barra de vida
     const pct=this.hp/30;
     CTX.fillStyle='rgba(0,0,0,.6)';  CTX.fillRect(sx+6,sy-11,this.w-12,7);
     CTX.fillStyle=`hsl(${pct*115},80%,48%)`; CTX.fillRect(sx+6,sy-11,(this.w-12)*pct,7);
@@ -702,18 +689,14 @@ class ExplObj {
   tick(spd){ this.x-=spd; if(++this.ft>5){this.f++;this.ft=0;} if(this.f>=2) this.dead=true; }
   draw(){
     const i=A.expl[this.f];
-    if(!i||!i.complete) return;
+    if(!i || !i.complete || i.naturalWidth === 0) return;
     CTX.drawImage(i,Math.round(this.x-22),Math.round(this.y-22),this.w,this.h);
   }
 }
 
-/* ─── Helpers ─── */
 function rnd(a,b){ return Math.random()*(b-a)+a; }
 function rndI(a,b){ return Math.floor(rnd(a,b+1)); }
 
-/* ═══════════════════════════════════════════════════════════════
-   SPAWN DE MONEDAS EN FORMA DE LETRAS
-═══════════════════════════════════════════════════════════════ */
 function spawnPhrase(frase, startX){
   const GAP=23, LSEP=40;
   let cx=startX;
@@ -727,9 +710,6 @@ function spawnPhrase(frase, startX){
   G.lastX = cx + 280;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SPAWN DE PATRONES DE OBSTÁCULOS / ITEMS
-═══════════════════════════════════════════════════════════════ */
 function spawnPattern(){
   if(G.intro) return;
   const gy  = GY();
@@ -738,7 +718,6 @@ function spawnPattern(){
   const kill = n > 14;
   const r    = Math.random();
 
-  // Salchipapa (bonus raro)
   if(!kill && r < 0.016){
     G.items.push(new Salchi(ax, gy-100));
     G.lastX = ax+200;
@@ -746,7 +725,6 @@ function spawnPattern(){
   }
 
   if(r < (kill ? 0.82 : 0.44)){
-    // ── Obstáculo ──
     const t=Math.random();
     if     (t<0.18) G.obs.push(new PalomaObj(ax, gy-115));
     else if(t<0.36) G.obs.push(new Balla    (ax, gy-100));
@@ -755,23 +733,18 @@ function spawnPattern(){
     else if(t<0.88) G.obs.push(new CarObj   (ax, gy-86));
     else            G.boxes.push(new BoxObj  (ax, gy-90));
     G.lastX = ax + (kill ? 280 : 430);
-
   } else {
-    // ── Item ──
     const t=Math.random();
     if(t < (kill ? 0.09 : 0.46)){
       G.items.push(new Bread(ax, gy-125));
       G.lastX = ax+200;
     } else {
-      // Monedas en arco
-      for(let i=0;i<7;i++)
-        G.coins.push(new Coin(ax+i*62, (gy+8)-Math.sin((i/6)*Math.PI)*165));
+      for(let i=0;i<7;i++) G.coins.push(new Coin(ax+i*62, (gy+8)-Math.sin((i/6)*Math.PI)*165));
       G.lastX = ax+510;
     }
   }
 }
 
-/* ─── Añadir a la horda ─── */
 function addToHorde(skinId=null, jump=false){
   if(G.horde.filter(p=>!p.dying).length >= MAX_HORDE) return;
   const id = skinId || (G.nextSkin%4)+1;
@@ -781,7 +754,6 @@ function addToHorde(skinId=null, jump=false){
   updateHUD();
 }
 
-/* ─── Toast animado ─── */
 let _toastT=null;
 function toast(txt){
   const el=document.getElementById('toast');
@@ -797,37 +769,29 @@ function toast(txt){
   },700);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   DIBUJO DE FONDO (parallax dos capas tileable)
-═══════════════════════════════════════════════════════════════ */
 function drawBg(spd){
   const bg1=A.bg1, bg2=A.bg2;
-  if(!bg1.complete || !bg1.naturalWidth){
+  if(!bg1 || !bg1.complete || bg1.naturalWidth === 0){
     CTX.fillStyle='#1a0530';
     CTX.fillRect(0,0,CV.width,CV.height);
     return;
   }
   const sc  = CV.height / bg1.naturalHeight;
   const w1  = bg1.naturalWidth  * sc;
-  const w2  = bg2.complete && bg2.naturalWidth ? bg2.naturalWidth*sc : w1;
+  const w2  = bg2 && bg2.complete && bg2.naturalWidth ? bg2.naturalWidth*sc : w1;
   const loop= w1+w2;
 
   G.bgX = ((G.bgX - spd) % loop + loop) % loop;
-
   let cx = -G.bgX;
   while(cx < CV.width){
     CTX.drawImage(bg1, cx, 0, w1, CV.height); cx+=w1;
-    if(bg2.complete && bg2.naturalWidth){ CTX.drawImage(bg2, cx, 0, w2, CV.height); cx+=w2; }
+    if(bg2 && bg2.complete && bg2.naturalWidth){ CTX.drawImage(bg2, cx, 0, w2, CV.height); cx+=w2; }
     else cx+=w1;
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   INICIO DE PARTIDA
-═══════════════════════════════════════════════════════════════ */
 function startGame(skinId){
   if(G && G.raf) cancelAnimationFrame(G.raf);
-
   G={
     running : true,
     skinId,
@@ -837,7 +801,7 @@ function startGame(skinId){
     obs     : [],
     boxes   : [],
     expls   : [],
-    buf     : [],        // Action Buffer (snapshot del líder cada frame)
+    buf     : [],
     gold    : 0,
     maxN    : 1,
     bgX     : 0,
@@ -849,25 +813,17 @@ function startGame(skinId){
     nextSkin: 1,
     raf     : null,
   };
-
   document.getElementById('hud').style.display='flex';
   updateHUD();
   showOvl(null);
-
-  // Primera frase de monedas romántica 💕
   spawnPhrase(FRASES[rndI(0,FRASES.length-1)], CV.width+80);
-
   G.raf = requestAnimationFrame(gameLoop);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   GAME OVER
-═══════════════════════════════════════════════════════════════ */
 function gameOver(){
   G.running=false;
   if(G.raf) cancelAnimationFrame(G.raf);
   document.getElementById('hud').style.display='none';
-
   const best = saveBest(G.gold, G.maxN);
   refreshBestUI();
   document.getElementById('goGold').textContent  = G.gold;
@@ -876,175 +832,160 @@ function gameOver(){
   showOvl('gover');
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   LOOP PRINCIPAL
-═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOOP PRINCIPAL — BLINDADO CON TRY / CATCH
+   ═══════════════════════════════════════════════════════════════════════════ */
 function gameLoop(now){
-  if(!G.running) return;
+  try {
+    if(!G || !G.running) return;
 
-  const ms = now - G.t0;
-  if(ms > INTRO_MS) G.intro = false;
+    const ms = now - G.t0;
+    if(ms > INTRO_MS) G.intro = false;
 
-  /* ── Velocidad dinámica ── */
-  const sec = ms / 1000;
-  G.speed = BASE_SPEED + Math.min(sec*0.07, 4);
-  const aliveAll = G.horde.filter(p=>!p.dying);
-  if(aliveAll.length > 14) G.speed = Math.min(G.speed + 3.5, 16);
+    const sec = ms / 1000;
+    G.speed = BASE_SPEED + Math.min(sec*0.07, 4);
+    const aliveAll = G.horde.filter(p=>!p.dying);
+    if(aliveAll.length > 14) G.speed = Math.min(G.speed + 3.5, 16);
 
-  /* ── Dibujar fondo ── */
-  CTX.clearRect(0, 0, CV.width, CV.height);
-  drawBg(G.speed);
+    CTX.clearRect(0, 0, CV.width, CV.height);
+    drawBg(G.speed);
 
-  /* ── Verificar game over ── */
-  if(aliveAll.length===0 && G.horde.length>0 && G.horde.every(p=>p.dTimer>80)){
-    gameOver(); return;
-  }
-  if(G.horde.length===0){ gameOver(); return; }
-
-  /* ── Actualizar LÍDER ── */
-  const leader = aliveAll[0];
-  if(leader){
-    leader.isLeader = true;
-    leader.tickLeader();
-
-    // Guardar snapshot en el action buffer
-    G.buf.push({
-      x:leader.x, y:leader.y, vy:leader.vy,
-      state:leader.state, frame:leader.frame, onGround:leader.onGround
-    });
-    if(G.buf.length > 3000) G.buf.shift();
-
-    // Actualizar seguidores con delay
-    for(let i=1; i<aliveAll.length; i++){
-      const snap = G.buf[ Math.max(0, G.buf.length-1 - i*BUF_DELAY) ];
-      aliveAll[i].isLeader = false;
-      aliveAll[i].tickFollower(snap, i);
+    // CONTROL DE SEGURIDAD CRÍTICO: Si no quedan Lizeths, fin del bucle
+    if(aliveAll.length===0 && G.horde.length>0 && G.horde.every(p=>p.dTimer>80)){
+      gameOver(); return;
     }
-  }
+    if(G.horde.length===0){ gameOver(); return; }
 
-  /* ── Muertos: física de caída y limpiar ── */
-  for(let i=G.horde.length-1; i>=0; i--){
-    const p=G.horde[i];
-    if(p.dying){
-      p._tickDead();
-      if(p.dTimer>130 || p.x<-250) G.horde.splice(i,1);
-    }
-  }
+    const leader = aliveAll[0];
+    if(leader){
+      leader.isLeader = true;
+      leader.tickLeader();
 
-  /* ── Spawn ── */
-  G.lastX -= G.speed;
-  if(++G.sTick >= (aliveAll.length>14 ? 16 : 30)){
-    if(G.lastX < CV.width*0.6) spawnPattern();
-    G.sTick=0;
-  }
+      G.buf.push({
+        x:leader.x, y:leader.y, vy:leader.vy,
+        state:leader.state, frame:leader.frame, onGround:leader.onGround
+      });
+      if(G.buf.length > 3000) G.buf.shift();
 
-  /* ── Cajas (pushable) ── */
-  for(let i=G.boxes.length-1; i>=0; i--){
-    const b=G.boxes[i];
-    b.tick(G.speed);
-    if(b.dead){G.boxes.splice(i,1);continue;}
-    b.draw();
-    let push=false;
-    for(const p of aliveAll){
-      if(b.hits(p,8) && p.y+p.h > b.y+20){
-        push=true;
-        p.x = b.x - p.w + 10;  // empuja contra la caja
+      for(let i=1; i<aliveAll.length; i++){
+        const snap = G.buf[ Math.max(0, G.buf.length-1 - i*BUF_DELAY) ];
+        aliveAll[i].isLeader = false;
+        aliveAll[i].tickFollower(snap, i);
       }
     }
-    b.pushed = push && aliveAll.length>=3;
-    if(b.pushed){
-      b.hp -= 3.5;
-      if(b.hp<=0){
-        G.expls.push(new ExplObj(b.x, b.y));
-        sfx('assets/explosion.mp3',0.3);
-        G.boxes.splice(i,1);
-        addToHorde(5, true);
-        toast('¡BOOM! 💥');
+
+    for(let i=G.horde.length-1; i>=0; i--){
+      const p=G.horde[i];
+      if(p.dying){
+        p._tickDead();
+        if(p.dTimer>130 || p.x<-250) G.horde.splice(i,1);
       }
     }
-  }
 
-  /* ── Obstáculos ── */
-  for(let i=G.obs.length-1; i>=0; i--){
-    const ob=G.obs[i];
-    ob.tick(G.speed);
-    if(ob.dead){G.obs.splice(i,1);continue;}
-    ob.draw();
-    for(const p of aliveAll){
-      const m = ob instanceof PalomaObj ? 16 : 26;
-      if(ob.hits ? ob.hits(p) : false || _hits(p,ob,m)){
-        G.expls.push(new ExplObj(ob.x, ob.y));
-        sfx('assets/explosion.mp3',0.25);
-        G.obs.splice(i,1);
-        p.triggerDeath();
-        updateHUD();
-        break;
+    G.lastX -= G.speed;
+    if(++G.sTick >= (aliveAll.length>14 ? 16 : 30)){
+      if(G.lastX < CV.width*0.6) spawnPattern();
+      G.sTick=0;
+    }
+
+    /* ── Cajas ── */
+    for(let i=G.boxes.length-1; i>=0; i--){
+      const b=G.boxes[i]; b.tick(G.speed);
+      if(b.dead){G.boxes.splice(i,1);continue;}
+      b.draw();
+      let push=false;
+      for(const p of aliveAll){
+        if(b.hits(p,8) && p.y+p.h > b.y+20){ push=true; p.x = b.x - p.w + 10; }
+      }
+      b.pushed = push && aliveAll.length>=3;
+      if(b.pushed){
+        b.hp -= 3.5;
+        if(b.hp<=0){
+          G.expls.push(new ExplObj(b.x, b.y));
+          sfx('assets/explosion.mp3',0.3);
+          G.boxes.splice(i,1);
+          addToHorde(5, true);
+          toast('¡BOOM! 💥');
+        }
       }
     }
-  }
 
-  /* ── Explosiones ── */
-  for(let i=G.expls.length-1; i>=0; i--){
-    const e=G.expls[i]; e.tick(G.speed); e.draw();
-    if(e.dead) G.expls.splice(i,1);
-  }
-
-  /* ── Items (pan, salchi) ── */
-  for(let i=G.items.length-1; i>=0; i--){
-    const it=G.items[i];
-    it.tick(G.speed);
-    if(it.dead){G.items.splice(i,1);continue;}
-    it.draw();
-    let hit=false;
-    for(const p of aliveAll){
-      if(it.hits(p,20)){
-        hit=true;
-        if(it instanceof Bread) { addToHorde(null,true); toast('🍞 +1 LIZETH!'); }
-        if(it instanceof Salchi){ addToHorde(5,true); addToHorde(7,true); toast('🍟 +2 LIZETHS!'); }
-        break;
+    /* ── Obstáculos ── */
+    for(let i=G.obs.length-1; i>=0; i--){
+      const ob=G.obs[i]; ob.tick(G.speed);
+      if(ob.dead){G.obs.splice(i,1);continue;}
+      ob.draw();
+      for(const p of aliveAll){
+        const m = ob instanceof PalomaObj ? 16 : 26;
+        if((ob.hits ? ob.hits(p) : false) || _hits(p,ob,m)){
+          G.expls.push(new ExplObj(ob.x, ob.y));
+          sfx('assets/explosion.mp3',0.25);
+          G.obs.splice(i,1);
+          p.triggerDeath();
+          updateHUD();
+          break;
+        }
       }
     }
-    if(hit) G.items.splice(i,1);
-  }
 
-  /* ── Monedas ── */
-  for(let i=G.coins.length-1; i>=0; i--){
-    const c=G.coins[i];
-    c.tick(G.speed);
-    if(c.dead){G.coins.splice(i,1);continue;}
-    c.draw();
-    let hit=false;
-    for(const p of aliveAll){
-      if(c.hits(p)){
-        hit=true;
-        G.gold++;
-        document.getElementById('hGold').textContent=G.gold;
-        sfx('assets/moneda.mp3',0.07);
-        break;
-      }
+    /* ── Explosiones ── */
+    for(let i=G.expls.length-1; i>=0; i--){
+      const e=G.expls[i]; e.tick(G.speed); e.draw();
+      if(e.dead) G.expls.splice(i,1);
     }
-    if(hit) G.coins.splice(i,1);
+
+    /* ── Items ── */
+    for(let i=G.items.length-1; i>=0; i--){
+      const it=G.items[i]; it.tick(G.speed);
+      if(it.dead){G.items.splice(i,1);continue;}
+      it.draw();
+      let hit=false;
+      for(const p of aliveAll){
+        if(it.hits(p,20)){
+          hit=true;
+          if(it instanceof Bread) { addToHorde(null,true); toast('🍞 +1 LIZETH!'); }
+          if(it instanceof Salchi){ addToHorde(5,true); addToHorde(7,true); toast('🍟 +2 LIZETHS!'); }
+          break;
+        }
+      }
+      if(hit) G.items.splice(i,1);
+    }
+
+    /* ── Monedas ── */
+    for(let i=G.coins.length-1; i>=0; i--){
+      const c=G.coins[i]; c.tick(G.speed);
+      if(c.dead){G.coins.splice(i,1);continue;}
+      c.draw();
+      let hit=false;
+      for(const p of aliveAll){
+        if(c.hits(p)){
+          hit=true; G.gold++;
+          document.getElementById('hGold').textContent=G.gold;
+          sfx('assets/moneda.mp3',0.07);
+          break;
+        }
+      }
+      if(hit) G.coins.splice(i,1);
+    }
+
+    const sorted=[...G.horde].sort((a,b)=>(a.y+a.oyF)-(b.y+b.oyF));
+    for(const p of sorted) p.draw();
+
+    const nn=aliveAll.length;
+    if(nn>G.maxN){ G.maxN=nn; updateHUD(); }
+
+    G.raf = requestAnimationFrame(gameLoop);
+  } catch(err) {
+    showError("Colapso en gameLoop: " + err.message);
   }
-
-  /* ── Dibujar horda ordenada por Y (profundidad) ── */
-  const sorted=[...G.horde].sort((a,b)=>(a.y+a.oyF)-(b.y+b.oyF));
-  for(const p of sorted) p.draw();
-
-  /* ── Tracking máximo de horda ── */
-  const nn=aliveAll.length;
-  if(nn>G.maxN){ G.maxN=nn; updateHUD(); }
-
-  G.raf = requestAnimationFrame(gameLoop);
 }
 
-// Helper colisión genérico (para obstáculos que tienen .w/.h pero no usan GO)
 function _hits(p, ob, m=28){
+  if(!ob) return false;
   return p.x+m < ob.x+ob.w && p.x+p.w-m > ob.x && p.y+m < ob.y+ob.h && p.y+p.h-m > ob.y;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   INPUT — teclado + touch optimizado para móvil
-═══════════════════════════════════════════════════════════════ */
+/* ─── CONTROLES ─── */
 function doJump(){
   if(!G || !G.running) return;
   unlockMusic();
@@ -1056,7 +997,6 @@ function setHeld(v){
   G.horde.forEach(p=>p.held=v);
 }
 
-// Touch: el canvas entero es el botón de salto
 CV.addEventListener('pointerdown', e=>{ e.preventDefault(); doJump(); setHeld(true); }, {passive:false});
 CV.addEventListener('pointerup',   e=>{ e.preventDefault(); setHeld(false); }, {passive:false});
 CV.addEventListener('pointercancel', ()=>setHeld(false));
@@ -1069,9 +1009,6 @@ window.addEventListener('keyup', e=>{
 });
 window.addEventListener('contextmenu', e=>e.preventDefault());
 
-/* ═══════════════════════════════════════════════════════════════
-   HUD
-═══════════════════════════════════════════════════════════════ */
 function updateHUD(){
   if(!G) return;
   const n=G.horde.filter(p=>!p.dying).length;
@@ -1079,12 +1016,10 @@ function updateHUD(){
   if(n>G.maxN) G.maxN=n;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SCREENS
-═══════════════════════════════════════════════════════════════ */
 function showOvl(id){
   for(const s of['mnu','gover']){
     const el=document.getElementById(s);
+    if(!el) continue;
     if(s===id){
       el.classList.remove('gone','hide');
     } else {
@@ -1094,11 +1029,11 @@ function showOvl(id){
   }
 }
 
-/* ─── Selector de skin ─── */
 let skinIdx=0;
 function setSkin(){
   const s=SKINS[skinIdx];
-  document.getElementById('prevImg').src=`assets/skin${s.id}/idle1.png`;
+  const imgEl = document.getElementById('prevImg');
+  if(imgEl) imgEl.src=`assets/skin${s.id}/idle1.png`;
   document.getElementById('charName').textContent=s.name;
 }
 document.getElementById('btnPrev').onclick=()=>{
@@ -1110,14 +1045,8 @@ document.getElementById('btnNext').onclick=()=>{
   sfx('assets/moneda.mp3',0.1);
 };
 
-document.getElementById('btnPlay').onclick=()=>{
-  unlockMusic();
-  startGame(SKINS[skinIdx].id);
-};
-document.getElementById('btnRestart').onclick=()=>{
-  unlockMusic();
-  startGame(SKINS[skinIdx].id);
-};
+document.getElementById('btnPlay').onclick=()=>{ unlockMusic(); startGame(SKINS[skinIdx].id); };
+document.getElementById('btnRestart').onclick=()=>{ unlockMusic(); startGame(SKINS[skinIdx].id); };
 document.getElementById('btnMenu').onclick=()=>{
   if(G&&G.raf) cancelAnimationFrame(G.raf);
   G={running:false};
@@ -1126,18 +1055,15 @@ document.getElementById('btnMenu').onclick=()=>{
   menuLoop();
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   FONDO ANIMADO EN EL MENÚ (canvas)
-═══════════════════════════════════════════════════════════════ */
+/* ─── MENU ANIMADO BACKGROUND ─── */
 let menuX=0, menuRaf=null;
 function menuLoop(){
   if(G && G.running){ if(menuRaf) cancelAnimationFrame(menuRaf); menuRaf=null; return; }
   CTX.clearRect(0,0,CV.width,CV.height);
   const bg=A.bg1;
-  if(bg.complete && bg.naturalWidth){
+  if(bg && bg.complete && bg.naturalWidth){
     const sc=CV.height/bg.naturalHeight, bw=bg.naturalWidth*sc;
     menuX=((menuX-1.1)%bw+bw)%bw;
-    // Dos pasadas para el tiling
     CTX.globalAlpha=0.28;
     for(let cx=-menuX; cx<CV.width+bw; cx+=bw) CTX.drawImage(bg,cx,0,bw,CV.height);
     CTX.globalAlpha=1;
@@ -1145,9 +1071,7 @@ function menuLoop(){
   menuRaf=requestAnimationFrame(menuLoop);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   INICIO
-═══════════════════════════════════════════════════════════════ */
+/* ─── ARRANCAR MENÚ ─── */
 refreshBestUI();
 G={running:false};
 showOvl('mnu');
