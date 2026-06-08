@@ -4,7 +4,7 @@ const ctx = canvas.getContext("2d");
 // --- LÓGICA DE SELECCIÓN Y FONDO ---
 let selectedLeaderSkin = 1; 
 let menuBgX = 0; 
-window.gameActive = false; // Accesible globalmente para input.js
+window.gameActive = false;
 
 window.selectSkin = function(skinId, element) {
     selectedLeaderSkin = skinId;
@@ -23,15 +23,12 @@ resize();
 
 function drawInfiniteBackground(offsetX) {
     if (!bg1.complete || !bg2.complete) return;
-
     let scale = canvas.height / bg1.naturalHeight;
     let bg1W = bg1.naturalWidth * scale;
     let bg2W = bg2.naturalWidth * scale;
     let totalW = bg1W + bg2W;
-
     let x = offsetX % totalW;
     if (x > 0) x -= totalW;
-
     while (x < canvas.width) {
         ctx.drawImage(bg1, x, 0, bg1W, canvas.height);
         x += bg1W;
@@ -87,10 +84,18 @@ let goldScore, nextSkinId, bgX, bgSpeed, spawnTimer, startTime, introActive, tsu
 const GROUND_PERCENT = 0.92, BASE_SPEED = 5.5, DELAY_FRAMES = 8;
 let animationId = null;
 
+// --- FIX: Flag para controlar la transición de game over ---
+let gameOverPending = false;
+let gameOverTimer = 0;
+
 // --- FUNCIONES CORE ---
 
 function initGame() {
-    if (animationId) cancelAnimationFrame(animationId);
+    // FIX: Cancelar el loop anterior correctamente
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+    }
     
     window.horde = [new Player(selectedLeaderSkin, true)];
     
@@ -101,6 +106,10 @@ function initGame() {
     goldScore = 0; bgX = 0; bgSpeed = BASE_SPEED;
     spawnTimer = 0; startTime = Date.now(); introActive = true; 
     window.gameActive = true; tsunamiTimer = 0; lastSpawnX = 0;
+    
+    // FIX: Resetear flags de game over
+    gameOverPending = false;
+    gameOverTimer = 0;
     
     document.getElementById("main-menu").style.display = "none";
     document.getElementById("game-over-screen").style.display = "none";
@@ -178,8 +187,18 @@ function spawnPattern(groundY, gameTime) {
     }
 }
 
+function triggerGameOver() {
+    // FIX: Solo activar game over una vez, con un pequeño delay visual
+    if (gameOverPending) return;
+    gameOverPending = true;
+    gameOverTimer = 90; // ~1.5 segundos a 60fps para ver la animación de muerte
+}
+
 function gameLoop() {
     if (!window.gameActive) return;
+    
+    animationId = requestAnimationFrame(gameLoop);
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     const gameTime = (Date.now() - startTime) / 1000;
@@ -194,11 +213,48 @@ function gameLoop() {
 
     if (aliveHorde.length >= 15 && tsunamiTimer <= 0) tsunamiTimer = 300;
     if (tsunamiTimer > 0) tsunamiTimer--;
-    
-    if (aliveHorde.length === 0 && window.horde.length === 0) {
-        window.gameActive = false; document.getElementById("game-over-screen").style.display = "flex"; return;
+
+    // FIX: Lógica de game over con delay - espera a que la animación de muerte termine
+    if (aliveHorde.length === 0 && !gameOverPending) {
+        // Si no quedan jugadores vivos, iniciar countdown de game over
+        if (window.horde.length === 0) {
+            // Horda completamente vacía: game over inmediato
+            triggerGameOver();
+        } else {
+            // Hay jugadores muriendo todavía: esperar un poco
+            triggerGameOver();
+        }
     }
 
+    if (gameOverPending) {
+        gameOverTimer--;
+        // Actualizar animaciones de muerte mientras esperamos
+        for (let i = window.horde.length - 1; i >= 0; i--) {
+            let p = window.horde[i];
+            p.updateLeader(groundY);
+            if (p.deathTimer > 120 || p.x + p.width < -200) window.horde.splice(i, 1);
+        }
+        // Seguir moviendo fondo y obstáculos para que se vea fluido
+        bgX -= bgSpeed;
+        for (let b of boxes) b.update(bgSpeed);
+        for (let o of obstacles) o.update(bgSpeed);
+        for (let i = explosions.length - 1; i >= 0; i--) {
+            explosions[i].update(bgSpeed); explosions[i].draw(ctx);
+            if (explosions[i].isFinished) explosions.splice(i, 1);
+        }
+        let sorted = [...window.horde].sort((a,b) => (a.y + a.groupOffsetY) - (b.y + b.groupOffsetY));
+        for (let m of sorted) m.draw(ctx, false);
+
+        if (gameOverTimer <= 0) {
+            window.gameActive = false;
+            cancelAnimationFrame(animationId);
+            animationId = null;
+            document.getElementById("game-over-screen").style.display = "flex";
+        }
+        return;
+    }
+
+    // --- Actualizar líder ---
     if (aliveHorde.length > 0) {
         const leader = aliveHorde[0]; leader.isLeader = true; let currentFloor = groundY;
         for(let b of boxes) { 
@@ -218,22 +274,24 @@ function gameLoop() {
         }
     }
 
+    // FIX: Actualizar jugadores muriendo sin eliminarlos abruptamente
     for (let i = window.horde.length - 1; i >= 0; i--) { 
         let p = window.horde[i]; 
         if (p.isDying) { 
             p.updateLeader(groundY); 
-            if (p.deathTimer > 100 || p.x + p.width < -100) window.horde.splice(i, 1); 
+            // FIX: Más tiempo para la animación de muerte (120 frames) y verifica que salgan de pantalla
+            if (p.deathTimer > 120 || p.x + p.width < -200) window.horde.splice(i, 1); 
         } else if (p.x < -80) p.triggerDeath(); 
     }
     
     spawnTimer++; if (spawnTimer > 35) { spawnPattern(groundY, gameTime); spawnTimer = 0; }
     lastSpawnX -= bgSpeed;
 
-    // --- CORRECCIÓN DE CAJAS ---
+    // --- CAJAS ---
     for (let i = boxes.length - 1; i >= 0; i--) {
         let b = boxes[i]; b.update(bgSpeed); b.draw(ctx); 
         let hEmp = false;
-        let boxDestroyed = false; // Variable de control
+        let boxDestroyed = false;
         
         for (let p of aliveHorde) { 
             if (p.y + p.height > b.y + 10 && p.x + p.width > b.x + 5 && p.x < b.x + b.width - 15) { 
@@ -249,33 +307,35 @@ function gameLoop() {
                 explosions.push(new Explosion(b.x, b.y)); 
                 explSound.cloneNode().play().catch(()=>{}); 
                 boxes.splice(i, 1); 
-                boxDestroyed = true; // Marcamos que la caja se borró
+                boxDestroyed = true;
                 addToHorde(5, true); 
             } 
         } else b.isBeingPushed = false;
         
-        // Solo verificamos salida de pantalla si NO fue borrada por colisión
-        if (!boxDestroyed && b.x < -400) boxes.splice(i, 1);
+        if (!boxDestroyed && boxes[i] && b.x < -400) boxes.splice(i, 1);
     }
     
-    // --- CORRECCIÓN DE OBSTÁCULOS ---
+    // --- OBSTÁCULOS ---
     for (let i = obstacles.length - 1; i >= 0; i--) {
-        obstacles[i].update(bgSpeed); obstacles[i].draw(ctx);
-        let obsDestroyed = false; // Variable de control
+        let obs = obstacles[i];
+        obs.update(bgSpeed); obs.draw(ctx);
+        let obsDestroyed = false;
         
         for (let p of aliveHorde) { 
-            if (checkCollision(p, obstacles[i], (obstacles[i] instanceof Paloma ? 15 : 35))) { 
-                explosions.push(new Explosion(obstacles[i].x, obstacles[i].y)); 
+            if (checkCollision(p, obs, (obs instanceof Paloma ? 15 : 35))) { 
+                explosions.push(new Explosion(obs.x, obs.y)); 
                 explSound.cloneNode().play().catch(()=>{}); 
                 obstacles.splice(i, 1); 
-                obsDestroyed = true; // Marcamos que el obstáculo se borró
+                obsDestroyed = true;
                 
                 if (tsunamiTimer <= 0) { p.triggerDeath(); updateUI(); } 
                 break; 
             } 
         }
-        // Solo verificamos salida de pantalla si NO fue borrado
-        if (!obsDestroyed && obstacles[i] && obstacles[i].x < -400) obstacles.splice(i, 1);
+        // FIX: Verificar que el índice sigue siendo válido antes de acceder
+        if (!obsDestroyed && i < obstacles.length && obstacles[i] && obstacles[i].x < -400) {
+            obstacles.splice(i, 1);
+        }
     }
 
     // Explosiones e Items
@@ -301,13 +361,12 @@ function gameLoop() {
 
     let sorted = [...window.horde].sort((a,b) => (a.y + a.groupOffsetY) - (b.y + b.groupOffsetY));
     for (let m of sorted) m.draw(ctx, tsunamiTimer > 0);
-
-    animationId = requestAnimationFrame(gameLoop);
 }
 
 function checkCollision(p, obj, margin) { return (p.x + margin < obj.x + obj.width && p.x + p.width - margin > obj.x && p.y + margin < obj.y + obj.height && p.y + p.height - margin > obj.y); }
 
 // --- MENÚ DINÁMICO ---
+let menuPlayer = null;
 function drawMenu() {
     if (window.gameActive) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -315,12 +374,16 @@ function drawMenu() {
     menuBgX -= 2.5; 
     drawInfiniteBackground(menuBgX);
 
-    const groundY = (canvas.height * GROUND_PERCENT) - 96;
-    let p = new Player(selectedLeaderSkin, true);
-    p.x = canvas.width / 2 - 48;
-    p.y = groundY;
-    p.frame = Math.floor(Date.now() / 100) % 4; 
-    p.draw(ctx, false);
+    // FIX: Reusar el mismo player del menú en lugar de crear uno nuevo cada frame
+    if (!menuPlayer || menuPlayer.skinID !== selectedLeaderSkin) {
+        menuPlayer = new Player(selectedLeaderSkin, true);
+        menuPlayer.x = canvas.width / 2 - 48;
+        menuPlayer.y = (canvas.height * GROUND_PERCENT) - 96;
+    }
+    menuPlayer.x = canvas.width / 2 - 48;
+    menuPlayer.y = (canvas.height * GROUND_PERCENT) - 96;
+    menuPlayer.frame = Math.floor(Date.now() / 100) % 4;
+    menuPlayer.draw(ctx, false);
 
     requestAnimationFrame(drawMenu);
 }
