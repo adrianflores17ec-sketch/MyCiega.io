@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a0412">
 <title>Lizeth Tsunami - Horizontal</title>
-<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght=800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{
@@ -20,7 +20,7 @@ html,body{
   -webkit-tap-highlight-color:transparent;
 }
 
-/* ═══ CONSOLA DE ERRORES PARA MÓVIL ═══ */
+/* ═══ CONSOLA DE ERRORES ═══ */
 #error-log {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -86,7 +86,6 @@ html,body{
   100% { transform: rotate(0deg); }
 }
 
-/* Ocultar el aviso si la pantalla está en horizontal legítimo */
 @media (orientation: landscape) {
   #rotate-overlay { display: none !important; }
 }
@@ -101,7 +100,7 @@ html,body{
   image-rendering:crisp-edges;
 }
 
-/* ═══ CAPAS UI OLMIPOWED EN HORIZONTAL ═══ */
+/* ═══ CAPAS UI HUD ═══ */
 #hud{
   position:fixed;
   top:0;left:0;right:0;
@@ -128,7 +127,7 @@ html,body{
 .hpill .ico{font-size:1.1em;line-height:1}
 .hpill .val{color:#FFD700;min-width:20px}
 
-/* ═══ OVERLAY SCREENS (REDISEÑADO PARA HORIZONTAL MOVIL) ═══ */
+/* ═══ OVERLAYS SCREEN ═══ */
 .ovl{
   position:fixed;inset:0;z-index:30;
   display:flex;flex-direction:column;
@@ -139,7 +138,6 @@ html,body{
 .ovl.hide{opacity:0;pointer-events:none}
 .ovl.gone{display:none}
 
-/* ── PANTALLA DE CARGA ── */
 #loader{ background:#0a0412; z-index:40; }
 .loader-inner{ display:flex;flex-direction:column;align-items:center; width:min(75vw,340px); }
 .load-title{ font-family:'Bangers',cursive; font-size:2rem;color:#FFD700; margin-bottom:12px;letter-spacing:2px; }
@@ -147,7 +145,6 @@ html,body{
 .bar-fill{ width:0%;height:100%; background:linear-gradient(90deg,#FF6EC7,#FFD700); box-shadow:0 0 10px #FFD700; transition:width 0.1s ease; }
 .load-txt{ font-family:'Nunito',sans-serif; font-weight:800;font-size:0.8rem;color:rgba(255,255,255,0.5); }
 
-/* ── MENU COMPACTO HORIZONTAL ── */
 #mnu{ background:linear-gradient(175deg,rgba(8,2,20,0.95) 0%,rgba(30,8,60,0.9) 100%); }
 .menu-inner{
   position:relative;z-index:1; display:flex;flex-direction:row; align-items:center; justify-content:space-between;
@@ -191,7 +188,6 @@ html,body{
 .best-item{ font-family:'Nunito',sans-serif;font-weight:800; font-size:0.75rem; color:rgba(255,255,255,.6); display:flex;flex-direction:column;align-items:center; }
 .best-item span{color:#FFD700;font-size:1.1em; font-family:'Bangers';}
 
-/* ── GAME OVER COMPACTO ── */
 #gover{ background:linear-gradient(175deg,rgba(8,2,20,0.96) 0%,rgba(60,5,20,0.94) 100%); }
 .go-inner{
   display:flex; flex-direction:row; align-items:center; justify-content:space-between;
@@ -287,6 +283,9 @@ html,body{
 <div id="toast"></div>
 
 <script>
+/* Declaración segura y temprana del Objeto Global del Juego */
+let G = null;
+
 function showError(msg) {
   const el = document.getElementById('error-log');
   if(el) { el.style.display = 'block'; el.innerHTML += "⚠️ " + msg + "<br>"; }
@@ -298,7 +297,6 @@ window.onerror = function(message, source, lineno, colno, error) {
   return false;
 };
 
-/* ─── CANVAS RE-AJUSTADO PARA MÓVIL HORIZONTAL ─── */
 const CV  = document.getElementById('c');
 const CTX = CV.getContext('2d');
 
@@ -306,21 +304,16 @@ function resize(){
   CV.width  = window.innerWidth;
   CV.height = window.innerHeight;
   CTX.imageSmoothingEnabled = false;
-  // Si cambia de tamaño a la mitad del juego, rediseña el fondo
-  if (G && !G.running && document.getElementById('mnu').classList.contains('gone') === false) {
-    // Re-render menu background if active
-  }
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', () => { setTimeout(resize, 200); });
 resize();
 
-/* ─── CONSTANTES EQUILIBRADAS EN HORIZONTAL ─── */
 const GRAVITY       = 0.92;
 const JUMP_FORCE    = -19.5;
-const BASE_SPEED    = 6.0; // Un poco más veloz para cubrir el ancho de pantalla horizontal
-const GROUND_RATIO  = 0.85; // Terreno un poco más bajo para dar espacio al cielo móvil
-const PLAYER_W      = 76;   // Escalado más amigable para móviles horizontales
+const BASE_SPEED    = 6.0; 
+const GROUND_RATIO  = 0.85; 
+const PLAYER_W      = 76;   
 const PLAYER_H      = 76;
 const LEADER_X      = 120;
 const BUF_DELAY     = 3;
@@ -329,7 +322,6 @@ const MAX_HORDE     = 60;
 
 function GY(){ return CV.height * GROUND_RATIO; }
 
-/* ─── PRECARGA ─── */
 let totalAssets = 0;
 let loadedAssets = 0;
 
@@ -362,7 +354,6 @@ function img(src){
 }
 function imgs(list){ return list.map(img); }
 
-/* ─── SKINS ─── */
 const SKINS = [
   {id:1,name:'LIZETH 1'}, {id:2,name:'LIZETH 2'}, {id:3,name:'LIZETH 3'},
   {id:4,name:'LIZETH 4'}, {id:5,name:'MAIRA'}, {id:7,name:'COME RATAS'}
@@ -379,7 +370,7 @@ function loadSkin(id){
 }
 SKINS.forEach(s=>loadSkin(s.id));
 
-/* ─── ASSETS GLOBALES ─── */
+/* ASSETS - Corregidas las mayúsculas del nombre Paloma de tu repositorio */
 const A={
   bg1    : img('assets/background.png'),
   bg2    : img('assets/background2.png'),
@@ -417,7 +408,6 @@ const FONT5={
 };
 const FRASES=['TE EXTRAÑO','TE AMO','MI CIEGA','MI CHIQUITA','MI ENOJONA','11:11','TE QUIERO'];
 
-/* ─── AUDIO PROTEGIDO ─── */
 const PLAYLIST=['assets/musica2.mp3','assets/musica1.mp3','assets/musica3.mp3','assets/musica4.mp3'];
 let bgMusic=null, musicIdx=0, musicOn=false;
 
@@ -434,7 +424,6 @@ function playMusic(){
 function unlockMusic(){ if(!musicOn) playMusic(); }
 function sfx(src,vol=0.15){ try{const a=new Audio(src);a.volume=vol;a.play().catch(()=>{});}catch(e){} }
 
-/* ─── PERSISTENCIA ─── */
 function getBest(){ try{return JSON.parse(localStorage.getItem('lz_best')||'{"gold":0,"horde":0}');}catch{return{gold:0,horde:0};} }
 function saveBest(gold,horde){
   const b=getBest();
@@ -448,9 +437,6 @@ function refreshBestUI(){
   document.getElementById('bestHorde').textContent=b.horde;
 }
 
-let G=null;
-
-/* ─── CLASE PLAYER ─── */
 class Player {
   constructor(skinId, isLeader=false, launchJump=false){
     this.skinId   = skinId;
@@ -531,7 +517,6 @@ class Player {
   }
 }
 
-/* ─── OBJETOS EN ESCENA ─── */
 class GO {
   constructor(x,y,w,h,sprite){ this.x=x; this.y=y; this.w=w; this.h=h; this.sprite=sprite; this.dead=false; }
   tick(spd){ this.x-=spd; if(this.x < -300) this.dead=true; }
@@ -624,7 +609,6 @@ function spawnPattern(){
 
   if(r < (kill ? 0.82 : 0.44)){
     const t=Math.random();
-    // Altura de palomas elevada de forma ideal para el salto en modo horizontal
     if     (t<0.18) G.obs.push(new PalomaObj(ax, gy - 165)); 
     else if(t<0.36) G.obs.push(new Balla    (ax, gy - 85)); 
     else if(t<0.54) G.obs.push(new Barrier  (ax, gy - 102)); 
@@ -682,7 +666,6 @@ function drawBg(spd){
   }
 }
 
-/* ── BUCLE PRINCIPAL CON CANDADO ESTRICTO DE VELOCIDAD ── */
 function startGame(skinId){
   if(G && G.raf) {
     cancelAnimationFrame(G.raf);
@@ -766,7 +749,6 @@ function gameLoop(now){
       G.sTick=0;
     }
 
-    /* Cajas */
     for(let i=G.boxes.length-1; i>=0; i--){
       const b=G.boxes[i]; b.tick(G.speed);
       if(b.dead){G.boxes.splice(i,1);continue;}
@@ -783,7 +765,6 @@ function gameLoop(now){
       }
     }
 
-    /* Obstáculos */
     for(let i=G.obs.length-1; i>=0; i--){
       const ob=G.obs[i]; ob.tick(G.speed);
       if(ob.dead){G.obs.splice(i,1);continue;}
@@ -797,10 +778,8 @@ function gameLoop(now){
       }
     }
 
-    /* Explosiones */
     for(let i=G.expls.length-1; i>=0; i--){ const e=G.expls[i]; e.tick(G.speed); e.draw(); if(e.dead) G.expls.splice(i,1); }
 
-    /* Items */
     for(let i=G.items.length-1; i>=0; i--){
       const it=G.items[i]; it.tick(G.speed);
       if(it.dead){G.items.splice(i,1);continue;}
@@ -817,7 +796,6 @@ function gameLoop(now){
       if(hit) G.items.splice(i,1);
     }
 
-    /* Monedas */
     for(let i=G.coins.length-1; i>=0; i--){
       const c=G.coins[i]; c.tick(G.speed);
       if(c.dead){G.coins.splice(i,1);continue;}
@@ -846,7 +824,6 @@ function gameLoop(now){
 
 function _hits(p, ob, m=24){ if(!ob) return false; return p.x+m < ob.x+ob.w && p.x+p.w-m > ob.x && p.y+m < ob.y+ob.h && p.y+p.h-m > ob.y; }
 
-/* ── CONTROLES SEGUROS TÁCTILES ── */
 function doJump(){
   if(!G || !G.running) return;
   if(!musicOn) { unlockMusic(); }
@@ -914,7 +891,6 @@ function menuLoop(){
 }
 
 refreshBestUI();
-G={running:false};
 showOvl('loader');
 </script>
 </body>
