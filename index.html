@@ -3,60 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lizeth Tsunami Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+    <title>Lizeth Tsunami</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div id="orientation-warning">
-        <div class="warning-content">
-            <h2>⚠️ ¡GIRA TU MÓVIL! ⚠️</h2>
-            <p>Para la mejor experiencia, juega en modo horizontal.</p>
-        </div>
-    </div>
-
     <div id="main-menu">
-        <h1 class="game-title">LIZETH TSUNAMI</h1>
-        
-        <p class="select-text">ELIGE TU LIZETH O AMIGA:</p>
-        <div class="skin-selector">
-            <div class="skin-card active" onclick="selectSkin(1, this)">
-                <div class="img-container"><img src="assets/skin1/run1.png" alt="Skin 1"></div>
-                <span>LIZETH 1</span>
+        <div class="menu-content">
+            <h1>LIZETH TSUNAMI</h1>
+            <div class="character-preview">
+                <button class="nav-btn" id="prev-skin">◀</button>
+                <div class="preview-box">
+                    <img id="skin-img-preview" src="assets/skin1/idle1.png">
+                    <span id="skin-name">LIZETH 1</span>
+                </div>
+                <button class="nav-btn" id="next-skin">▶</button>
             </div>
-            <div class="skin-card" onclick="selectSkin(2, this)">
-                <div class="img-container"><img src="assets/skin2/run1.png" alt="Skin 2"></div>
-                <span>LIZETH 2</span>
-            </div>
-            <div class="skin-card" onclick="selectSkin(3, this)">
-                <div class="img-container"><img src="assets/skin3/run1.png" alt="Skin 3"></div>
-                <span>LIZETH 3</span>
-            </div>
-            <div class="skin-card" onclick="selectSkin(4, this)">
-                <div class="img-container"><img src="assets/skin4/run1.png" alt="Skin 4"></div>
-                <span>LIZETH 4</span>
-            </div>
-            <div class="skin-card" onclick="selectSkin(5, this)">
-                <div class="img-container"><img src="assets/skin5/run1.png" alt="Skin 5"></div>
-                <span>MAIRA</span>
-            </div>
-            <div class="skin-card" onclick="selectSkin(7, this)">
-                <div class="img-container"><img src="assets/skin7/run1.png" alt="Skin 7"></div>
-                <span>COME RATAS</span>
-            </div>
+            <button id="start-btn">EMPEZAR PARTIDA</button>
         </div>
-
-        <button id="start-btn">INICIAR AVENTURA</button>
     </div>
 
     <div id="ui" style="display: none;">
         <div id="gold-stat" class="stat-box">💰 Oro: <span id="gold-count">0</span></div>
-        <div id="lizeth-stat" class="stat-box">👯 Horda: <span id="lizeth-count">1</span></div>
+        <div id="lizeth-stat" class="stat-box">👯 Lizeths: <span id="lizeth-count">1</span></div>
     </div>
 
     <div id="game-over-screen" style="display: none;">
         <h1>¡GAME OVER!</h1>
-        <button id="restart-btn">REINTENTAR</button>
+        <button id="restart-btn">NUEVA PARTIDA</button>
     </div>
 
     <canvas id="game"></canvas>
