@@ -85,6 +85,39 @@ html,body{
 .ovl.hide{opacity:0;pointer-events:none}
 .ovl.gone{display:none}
 
+/* ── PANTALLA DE CARGA ── */
+#loader{
+  background:#0a0412;
+  z-index:40;
+}
+.loader-inner{
+  display:flex;flex-direction:column;align-items:center;
+  width:min(85vw,340px);
+}
+.load-title{
+  font-family:'Bangers',cursive;
+  font-size:2.5rem;color:#FFD700;
+  margin-bottom:20px;letter-spacing:2px;
+  text-shadow:0 0 15px rgba(255,215,0,0.4);
+}
+.bar-bg{
+  width:100%;height:14px;
+  background:rgba(255,255,255,0.08);
+  border-radius:10px;overflow:hidden;
+  border:1px solid rgba(255,215,0,0.2);
+  margin-bottom:10px;
+}
+.bar-fill{
+  width:0%;height:100%;
+  background:linear-gradient(90deg,#FF6EC7,#FFD700);
+  box-shadow:0 0 10px #FFD700;
+  transition:width 0.1s ease;
+}
+.load-txt{
+  font-family:'Nunito',sans-serif;
+  font-weight:800;font-size:0.85rem;color:rgba(255,255,255,0.5);
+}
+
 /* ── MENU ── */
 #mnu{
   background:linear-gradient(175deg,rgba(8,2,20,0.93) 0%,rgba(30,8,60,0.88) 100%);
@@ -230,6 +263,7 @@ html,body{
   box-shadow:0 6px 28px rgba(255,165,0,.5),0 2px 0 #8a5000 inset;
   transition:transform .1s,box-shadow .1s;
   margin-top:4px;
+  display: none; /* Se activa dinámicamente cuando cargue todo */
 }
 .play-btn:active{transform:scale(.96) translateY(2px);box-shadow:0 2px 12px rgba(255,165,0,.3)}
 
@@ -341,6 +375,16 @@ html,body{
 
 <div id="error-log"></div>
 
+<div id="loader" class="ovl">
+  <div class="loader-inner">
+    <div class="load-title">CARGANDO JUEGO...</div>
+    <div class="bar-bg">
+      <div id="barFill" class="bar-fill"></div>
+    </div>
+    <div id="loadTxt" class="load-txt">0%</div>
+  </div>
+</div>
+
 <canvas id="c"></canvas>
 
 <div id="hud">
@@ -348,7 +392,7 @@ html,body{
   <div class="hpill"><span class="ico">👯</span><span>HORDA</span><span class="val" id="hCount">1</span></div>
 </div>
 
-<div id="mnu" class="ovl">
+<div id="mnu" class="ovl gone">
   <div class="menu-inner">
     <div class="gtitle">LIZETH<br>TSUNAMI</div>
     <div class="gsubtitle">¡Corre mi amor! 💕</div>
@@ -432,12 +476,35 @@ const MAX_HORDE     = 80;
 
 function GY(){ return CV.height * GROUND_RATIO; }
 
-/* ─── CACHÉ DE IMÁGENES PROTEGIDO ─── */
+/* ─── MANIFEST DE PRECARGA ─── */
+let totalAssets = 0;
+let loadedAssets = 0;
+
+function assetLoaded() {
+  loadedAssets++;
+  const pct = Math.floor((loadedAssets / totalAssets) * 100);
+  document.getElementById('barFill').style.width = pct + '%';
+  document.getElementById('loadTxt').textContent = pct + '%';
+
+  if (loadedAssets >= totalAssets) {
+    setTimeout(() => {
+      showOvl('mnu');
+      document.getElementById('btnPlay').style.display = 'block';
+      menuLoop();
+    }, 400);
+  }
+}
+
 const _IMG = {};
 function img(src){ 
+  totalAssets++;
   if(!_IMG[src]){
     const i = new Image();
-    i.onerror = () => showError(`¡Falta archivo o ruta rota!: "${src}"`);
+    i.onload = assetLoaded;
+    i.onerror = () => {
+      showError(`¡Falta archivo o ruta rota!: "${src}"`);
+      assetLoaded();
+    };
     i.src = src;
     _IMG[src] = i;
   } 
@@ -458,6 +525,8 @@ const SK = {};
 function loadSkin(id){
   if(SK[id]) return;
   const b=`assets/skin${id}`;
+  // Forzar la precarga de los idles para que no parpadee el menú
+  img(`${b}/idle1.png`);
   SK[id]={
     run : imgs([1,2,3,4].map(i=>`${b}/run${i}.png`)),
     jump: imgs([1,2].map(i=>`${b}/jump${i}.png`)),
@@ -477,10 +546,26 @@ const A={
   barrier: img('assets/barrera2.png'),
   box    : img('assets/caja.png'),
   salchi : img('assets/salchipapa.png'),
-  // CORRECCIÓN AQUÍ: Puesto con 'P' mayúscula para coincidir con tu GitHub
   paloma : imgs([1,2,3,4,5].map(i=>`assets/paloma/Paloma${i}.png`)),
   expl   : imgs([4,5].map(i=>`assets/explosion/expl${i}.png`)),
 };
+
+/* ─── PRECARGA DE AUDIOS ASÍNCRONOS ─── */
+const AUDIOS_RUTAS = [
+  'assets/musica1.mp3','assets/musica2.mp3','assets/musica3.mp3','assets/musica4.mp3',
+  'assets/moneda.mp3','assets/pan.mp3','assets/explosion.mp3'
+];
+AUDIOS_RUTAS.forEach(ruta => {
+  totalAssets++;
+  const a = new Audio();
+  a.oncanplaythrough = function logo() {
+    a.oncanplaythrough = null;
+    assetLoaded();
+  };
+  a.onerror = () => { assetLoaded(); }; // Si un audio falla, que continúe
+  a.src = ruta;
+  a.load();
+});
 
 /* ─── FRASES DE MONEDAS ─── */
 const FONT5={
@@ -1013,7 +1098,7 @@ function updateHUD(){
 }
 
 function showOvl(id){
-  for(const s of['mnu','gover']){
+  for(const s of['loader','mnu','gover']){
     const el=document.getElementById(s);
     if(!el) continue;
     if(s===id){
@@ -1066,10 +1151,10 @@ function menuLoop(){
   menuRaf=requestAnimationFrame(menuLoop);
 }
 
+// Inicialización controlada por la pantalla de precarga
 refreshBestUI();
 G={running:false};
-showOvl('mnu');
-menuLoop();
+showOvl('loader');
 </script>
 </body>
 </html>
