@@ -477,7 +477,8 @@ const A={
   barrier: img('assets/barrera2.png'),
   box    : img('assets/caja.png'),
   salchi : img('assets/salchipapa.png'),
-  paloma : imgs([1,2,3,4,5].map(i=>`assets/paloma/paloma${i}.png`)),
+  // CORRECCIÓN AQUÍ: Puesto con 'P' mayúscula para coincidir con tu GitHub
+  paloma : imgs([1,2,3,4,5].map(i=>`assets/paloma/Paloma${i}.png`)),
   expl   : imgs([4,5].map(i=>`assets/explosion/expl${i}.png`)),
 };
 
@@ -621,7 +622,6 @@ class Player {
     if(!sp) return;
     let i = this.state==='jump' ? sp.jump[this.vy < 0 ? 0 : 1] : sp.run[this.frame % 4];
     
-    // FILTRO DE SEGURIDAD: Evita dibujar si la imagen se rompió o no cargó
     if(!i || !i.complete || i.naturalWidth === 0) return;
 
     CTX.save();
@@ -832,9 +832,6 @@ function gameOver(){
   showOvl('gover');
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   LOOP PRINCIPAL — BLINDADO CON TRY / CATCH
-   ═══════════════════════════════════════════════════════════════════════════ */
 function gameLoop(now){
   try {
     if(!G || !G.running) return;
@@ -850,7 +847,6 @@ function gameLoop(now){
     CTX.clearRect(0, 0, CV.width, CV.height);
     drawBg(G.speed);
 
-    // CONTROL DE SEGURIDAD CRÍTICO: Si no quedan Lizeths, fin del bucle
     if(aliveAll.length===0 && G.horde.length>0 && G.horde.every(p=>p.dTimer>80)){
       gameOver(); return;
     }
@@ -1055,7 +1051,6 @@ document.getElementById('btnMenu').onclick=()=>{
   menuLoop();
 };
 
-/* ─── MENU ANIMADO BACKGROUND ─── */
 let menuX=0, menuRaf=null;
 function menuLoop(){
   if(G && G.running){ if(menuRaf) cancelAnimationFrame(menuRaf); menuRaf=null; return; }
@@ -1071,7 +1066,6 @@ function menuLoop(){
   menuRaf=requestAnimationFrame(menuLoop);
 }
 
-/* ─── ARRANCAR MENÚ ─── */
 refreshBestUI();
 G={running:false};
 showOvl('mnu');
