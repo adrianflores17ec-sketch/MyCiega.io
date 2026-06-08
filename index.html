@@ -263,7 +263,7 @@ html,body{
   box-shadow:0 6px 28px rgba(255,165,0,.5),0 2px 0 #8a5000 inset;
   transition:transform .1s,box-shadow .1s;
   margin-top:4px;
-  display: none; /* Se activa dinámicamente cuando cargue todo */
+  display: none;
 }
 .play-btn:active{transform:scale(.96) translateY(2px);box-shadow:0 2px 12px rgba(255,165,0,.3)}
 
@@ -433,9 +433,6 @@ html,body{
 <div id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════════════════
-//  SISTEMA COLECTOR DE ERRORES (MÓVIL SIN PC)
-// ═══════════════════════════════════════════════════════════════════════════
 function showError(msg) {
   const el = document.getElementById('error-log');
   if(el) {
@@ -476,7 +473,7 @@ const MAX_HORDE     = 80;
 
 function GY(){ return CV.height * GROUND_RATIO; }
 
-/* ─── MANIFEST DE PRECARGA ─── */
+/* ─── PRECARGA ─── */
 let totalAssets = 0;
 let loadedAssets = 0;
 
@@ -525,7 +522,6 @@ const SK = {};
 function loadSkin(id){
   if(SK[id]) return;
   const b=`assets/skin${id}`;
-  // Forzar la precarga de los idles para que no parpadee el menú
   img(`${b}/idle1.png`);
   SK[id]={
     run : imgs([1,2,3,4].map(i=>`${b}/run${i}.png`)),
@@ -550,7 +546,7 @@ const A={
   expl   : imgs([4,5].map(i=>`assets/explosion/expl${i}.png`)),
 };
 
-/* ─── PRECARGA DE AUDIOS ASÍNCRONOS ─── */
+/* ─── PRECARGA DE AUDIOS ─── */
 const AUDIOS_RUTAS = [
   'assets/musica1.mp3','assets/musica2.mp3','assets/musica3.mp3','assets/musica4.mp3',
   'assets/moneda.mp3','assets/pan.mp3','assets/explosion.mp3'
@@ -562,7 +558,7 @@ AUDIOS_RUTAS.forEach(ruta => {
     a.oncanplaythrough = null;
     assetLoaded();
   };
-  a.onerror = () => { assetLoaded(); }; // Si un audio falla, que continúe
+  a.onerror = () => { assetLoaded(); };
   a.src = ruta;
   a.load();
 });
@@ -634,7 +630,7 @@ class Player {
     this.w = PLAYER_W;
     this.h = PLAYER_H;
     this.x = isLeader ? LEADER_X : -PLAYER_W;
-    this.y = GY();
+    this.y = GY() - PLAYER_H; // Asegurar base en el suelo exacto
     this.vy       = launchJump ? JUMP_FORCE * 0.85 : 0;
     this.onGround = !launchJump;
     this.held     = false;
@@ -671,7 +667,7 @@ class Player {
     this.vy += grav;
     this.y  += this.vy;
 
-    const gy = GY();
+    const gy = GY() - this.h;
     if(this.y >= gy){
       this.y        = gy;
       this.vy       = 0;
@@ -716,7 +712,7 @@ class Player {
   }
 }
 
-/* ─── CLASES DE OBJETOS CON FILTRO DE SEGURIDAD EN DRAW ─── */
+/* ─── CLASES DE OBJETOS RE-ALINEADOS ─── */
 class GO {
   constructor(x,y,w,h,sprite){
     this.x=x; this.y=y; this.w=w; this.h=h; this.sprite=sprite; this.dead=false;
@@ -795,6 +791,7 @@ function spawnPhrase(frase, startX){
   G.lastX = cx + 280;
 }
 
+/* ── CORRECCIÓN: ALINEACIÓN PERFECTA SUELO ── */
 function spawnPattern(){
   if(G.intro) return;
   const gy  = GY();
@@ -804,27 +801,27 @@ function spawnPattern(){
   const r    = Math.random();
 
   if(!kill && r < 0.016){
-    G.items.push(new Salchi(ax, gy-100));
+    G.items.push(new Salchi(ax, gy - 105));
     G.lastX = ax+200;
     return;
   }
 
   if(r < (kill ? 0.82 : 0.44)){
     const t=Math.random();
-    if     (t<0.18) G.obs.push(new PalomaObj(ax, gy-115));
-    else if(t<0.36) G.obs.push(new Balla    (ax, gy-100));
-    else if(t<0.54) G.obs.push(new Barrier  (ax, gy-116));
-    else if(t<0.72) G.obs.push(new Barrel   (ax, gy-106));
-    else if(t<0.88) G.obs.push(new CarObj   (ax, gy-86));
-    else            G.boxes.push(new BoxObj  (ax, gy-90));
+    if     (t<0.18) G.obs.push(new PalomaObj(ax, gy - 130)); // Vuela a altura de salto bajo
+    else if(t<0.36) G.obs.push(new Balla    (ax, gy - 105)); // Pegado al suelo
+    else if(t<0.54) G.obs.push(new Barrier  (ax, gy - 122)); // Pegado al suelo
+    else if(t<0.72) G.obs.push(new Barrel   (ax, gy - 112)); // Pegado al suelo
+    else if(t<0.88) G.obs.push(new CarObj   (ax, gy - 92));  // Pegado al suelo
+    else            G.boxes.push(new BoxObj  (ax, gy - 95));  // Pegado al suelo
     G.lastX = ax + (kill ? 280 : 430);
   } else {
     const t=Math.random();
     if(t < (kill ? 0.09 : 0.46)){
-      G.items.push(new Bread(ax, gy-125));
+      G.items.push(new Bread(ax, gy - 68));
       G.lastX = ax+200;
     } else {
-      for(let i=0;i<7;i++) G.coins.push(new Coin(ax+i*62, (gy+8)-Math.sin((i/6)*Math.PI)*165));
+      for(let i=0;i<7;i++) G.coins.push(new Coin(ax+i*62, (gy - 40) - Math.sin((i/6)*Math.PI)*165));
       G.lastX = ax+510;
     }
   }
@@ -854,6 +851,7 @@ function toast(txt){
   },700);
 }
 
+/* ── CORRECCIÓN: MOVIMIENTO DE FONDO HACIA LA IZQUIERDA ── */
 function drawBg(spd){
   const bg1=A.bg1, bg2=A.bg2;
   if(!bg1 || !bg1.complete || bg1.naturalWidth === 0){
@@ -866,7 +864,9 @@ function drawBg(spd){
   const w2  = bg2 && bg2.complete && bg2.naturalWidth ? bg2.naturalWidth*sc : w1;
   const loop= w1+w2;
 
-  G.bgX = ((G.bgX - spd) % loop + loop) % loop;
+  // Invertido el operador para avanzar de derecha a izquierda correctamente
+  G.bgX = (G.bgX + spd) % loop;
+  
   let cx = -G.bgX;
   while(cx < CV.width){
     CTX.drawImage(bg1, cx, 0, w1, CV.height); cx+=w1;
@@ -1143,7 +1143,10 @@ function menuLoop(){
   const bg=A.bg1;
   if(bg && bg.complete && bg.naturalWidth){
     const sc=CV.height/bg.naturalHeight, bw=bg.naturalWidth*sc;
-    menuX=((menuX-1.1)%bw+bw)%bw;
+    
+    // El menú ahora también se desliza hacia la izquierda sutilmente
+    menuX=(menuX + 1.1) % bw;
+    
     CTX.globalAlpha=0.28;
     for(let cx=-menuX; cx<CV.width+bw; cx+=bw) CTX.drawImage(bg,cx,0,bw,CV.height);
     CTX.globalAlpha=1;
@@ -1151,7 +1154,6 @@ function menuLoop(){
   menuRaf=requestAnimationFrame(menuLoop);
 }
 
-// Inicialización controlada por la pantalla de precarga
 refreshBestUI();
 G={running:false};
 showOvl('loader');
